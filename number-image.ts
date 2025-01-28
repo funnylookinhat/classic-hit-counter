@@ -1,9 +1,6 @@
 import { Buffer } from "node:buffer";
-import {
-  isNumberImageCallbackEvent,
-  type NumberImageCallbackEvent,
-  type NumberImageIncomingEvent,
-} from "./number-image-worker.ts";
+import { type NumberImageIncomingEvent } from "./number-image-worker.ts";
+import { isArrayBuffer, unpackNumberFromArrayBuffer } from "./array-buffer.ts";
 import {
   generateHoistedPromise,
   type HoistedPromise,
@@ -14,10 +11,10 @@ const numberImageWorker = new Worker(workerUrl, {
   type: "module",
 });
 
-const pendingWorkerPromises: Record<number, HoistedPromise<Buffer>> = {};
+const pendingWorkerPromises: Record<number, HoistedPromise<Uint8Array>> = {};
 
-async function generateNumberImage(number: number): Promise<Buffer> {
-  pendingWorkerPromises[number] = generateHoistedPromise<Buffer>();
+async function generateNumberImage(number: number): Promise<Uint8Array> {
+  pendingWorkerPromises[number] = generateHoistedPromise<Uint8Array>();
 
   const numberImageIncomingEvent: NumberImageIncomingEvent = {
     data: {
@@ -31,26 +28,25 @@ async function generateNumberImage(number: number): Promise<Buffer> {
 }
 
 numberImageWorker.onmessage = (e) => {
-  if (!isNumberImageCallbackEvent(e)) {
+  if (!isArrayBuffer(e.data)) {
     console.error(
       `Unexpected callback from worker: ${JSON.stringify(e).substring(0, 100)}`,
     );
     return;
   }
 
-  if (pendingWorkerPromises[e.data.number] === undefined) {
-    console.error(`No pending worker promise found for ${e.data.number}`);
+  const { number, remainingBuffer } = unpackNumberFromArrayBuffer(e.data);
+
+  if (pendingWorkerPromises[number] === undefined) {
+    console.error(`No pending worker promise found for ${number}`);
     return;
   }
 
-  if (e.data.error !== null) {
-    pendingWorkerPromises[e.data.number].reject(e.data.error);
-  } else {
-    pendingWorkerPromises[e.data.number].resolve(
-      Buffer.from(new Uint8Array(e.data.buffer)),
-    );
-  }
-  delete pendingWorkerPromises[e.data.id];
+  pendingWorkerPromises[number].resolve(
+    new Uint8Array(remainingBuffer),
+  );
+
+  delete pendingWorkerPromises[number];
 };
 
 // This is a cheap mechanism to manage a pre-generated set of images to stay
@@ -60,12 +56,15 @@ numberImageWorker.onmessage = (e) => {
 // Ideally this whole thing moves to the worker - it manages the pressure
 // and just holds the data in memory until the message comes through asking
 // for it.
-const numberImagePromises: Record<number, Promise<Buffer>> = {};
+const numberImagePromises: Record<number, Promise<Uint8Array>> = {};
 let currentNumberIndex = 0;
 
 const DEFAULT_COUNT = 5;
 
-function fillNumberImages(startIndex: number, count: number): Promise<Buffer> {
+function fillNumberImages(
+  startIndex: number,
+  count: number,
+): Promise<Uint8Array> {
   if (!Number.isInteger(count)) {
     throw new Error(
       `Invalid count provided (${count}) - must be an integer.`,
@@ -77,9 +76,9 @@ function fillNumberImages(startIndex: number, count: number): Promise<Buffer> {
 
   for (let i = currentNumberIndex; i < currentNumberIndex + count; i++) {
     if (numberImagePromises[i] !== undefined) {
-      console.log(`fillNumberImages: Skipping ${i}`);
+      // console.log(`fillNumberImages: Skipping ${i}`);
     } else {
-      console.log(`fillNumberImages: Generating ${i}`);
+      // console.log(`fillNumberImages: Generating ${i}`);
       numberImagePromises[i] = generateNumberImage(i);
     }
   }
@@ -87,16 +86,9 @@ function fillNumberImages(startIndex: number, count: number): Promise<Buffer> {
   return numberImagePromises[startIndex];
 }
 
-const a = Date.now();
 fillNumberImages(1, DEFAULT_COUNT);
-numberImagePromises[DEFAULT_COUNT].then(() => {
-  const b = Date.now();
-  console.log(
-    `GENERATED AND TRANSFERRED ${DEFAULT_COUNT} IN ${b - a}ms`,
-  );
-});
 
-export function getNumberImage(number: number): Promise<Buffer> {
+export function getNumberImage(number: number): Promise<Uint8Array> {
   if (!Number.isInteger(number)) {
     throw new Error(
       `Invalid number provided (${number} - must be an integer.`,

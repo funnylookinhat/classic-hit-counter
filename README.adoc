@@ -1,0 +1,3 @@
+= Classic Hit Counter
+
+Add a fancy visitor counter to your website - _now with analytics!_

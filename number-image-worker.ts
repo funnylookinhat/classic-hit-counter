@@ -1,3 +1,4 @@
+import { packNumberToArrayBuffer } from "./array-buffer.ts";
 import { createNumberImage } from "./create-number-image.ts";
 
 // Consider moving to a separate file
@@ -12,15 +13,7 @@ export interface NumberImageIncomingEvent {
   };
 }
 
-export interface NumberImageCallbackEvent {
-  data: {
-    number: number;
-    buffer: ArrayBuffer | null;
-    error: Error | null;
-  };
-}
-
-export function isNumberImageIncomingEvent(
+function isNumberImageIncomingEvent(
   obj: unknown,
 ): obj is NumberImageIncomingEvent {
   return (
@@ -32,31 +25,6 @@ export function isNumberImageIncomingEvent(
   );
 }
 
-function isArrayBuffer(value: unknown): value is ArrayBuffer {
-  return value instanceof ArrayBuffer;
-}
-
-function isError(value: unknown): value is Error {
-  return value instanceof Error;
-}
-
-// Type guard for NumberImageCallbackEvent
-export function isNumberImageCallbackEvent(
-  value: unknown,
-): value is NumberImageCallbackEvent {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    typeof (value as NumberImageCallbackEvent).data === "object" &&
-    (value as NumberImageCallbackEvent).data !== null &&
-    typeof (value as NumberImageCallbackEvent).data.number === "number" &&
-    ((value as NumberImageCallbackEvent).data.buffer === null ||
-      isArrayBuffer((value as NumberImageCallbackEvent).data.buffer)) &&
-    ((value as NumberImageCallbackEvent).data.error === null ||
-      isError((value as NumberImageCallbackEvent).data.error))
-  );
-}
-
 (self as unknown as DedicatedWorkerGlobalScope).onmessage = async (e) => {
   if (!isNumberImageIncomingEvent(e)) {
     console.error(
@@ -65,30 +33,15 @@ export function isNumberImageCallbackEvent(
     return;
   }
 
-  const callbackEvent: NumberImageCallbackEvent = {
-    data: {
-      number: e.data.number,
-      buffer: null,
-      error: null,
-    },
-  };
   try {
-    callbackEvent.data.buffer = (await createNumberImage(
-      callbackEvent.data.number,
+    const arrayBuffer = (await createNumberImage(
+      e.data.number,
       "blue_analog_small",
     )).buffer;
+    (self as unknown as DedicatedWorkerGlobalScope).postMessage(
+      packNumberToArrayBuffer(e.data.number, arrayBuffer),
+    );
   } catch (error) {
-    if (!isError(error)) {
-      console.error(
-        `Catch received a non-error type.  Converting to an error.`,
-      );
-      callbackEvent.data.error = new Error(`${error}`);
-    } else {
-      callbackEvent.data.error = error;
-    }
+    return console.error(`NumberImageWorkerOptimized Error: ${error}`);
   }
-
-  (self as unknown as DedicatedWorkerGlobalScope).postMessage(
-    callbackEvent.data,
-  );
 };
