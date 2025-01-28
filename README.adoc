@@ -1,3 +1,36 @@
 = Classic Hit Counter
 
 Add a fancy visitor counter to your website - _now with analytics!_
+
+== TODO List
+
+* Setup cache control headers
+** 1 hour
+
+*Basic implementation goals:*
+
+* Define domain to accept requests for
+** Check referrer matches, if not, just return count.
+* On request:
+** Check if referrer matches site, if so - update count and return new image
+** Otherwise return previous image
+* Response headers:
+** If referrer came in, give them a cookie with their visitor number
+** Expires in 24h
+* Cookie logic
+** Track which pages they've seen
+** If they have a cookie, just return previous image.
+** If cookie doesn't show a page hit, track page hit.
+
+*Things worth making configurable:*
+
+* Small vs. Large Images
+* Different Image Styles
+* Minimum Digits
+* Cookies to not double-count in 24h? configurable period
+
+*Tracking Ideas*
+
+* Referrers
+* User Agents
+* Daily Totals
