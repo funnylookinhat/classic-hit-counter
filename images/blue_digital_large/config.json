@@ -1,8 +1,8 @@
 {
-  "digitWidth": 39,
-  "digitHeight": 73,
-  "spacing": 1,
-  "padding": 5,
+  "digitWidth": 203,
+  "digitHeight": 381,
+  "spacing": 5,
+  "padding": 40,
   "backgroundColor": "#1b1b1b",
   "images": {
     "0": "0.png",

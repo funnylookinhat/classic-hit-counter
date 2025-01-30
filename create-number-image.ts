@@ -1,7 +1,7 @@
 import sharp from "sharp";
 import { Buffer } from "node:buffer";
 
-interface CounterFormatConfig {
+interface CounterStyleConfig {
   digitWidth: number;
   digitHeight: number;
   spacing: number;
@@ -21,7 +21,7 @@ interface CounterFormatConfig {
   };
 }
 
-interface CounterFormat {
+interface CounterStyle {
   digitWidth: number;
   digitHeight: number;
   spacing: number;
@@ -41,25 +41,25 @@ interface CounterFormat {
   };
 }
 
-type ImageKey = keyof CounterFormat["images"];
+type ImageKey = keyof CounterStyle["images"];
 
-const COUNTERS: Record<string, CounterFormat> = {};
+const COUNTERS: Record<string, CounterStyle> = {};
 
 // Purposefully made synchronous for now - can async later... avoids potential
 // race conditions if a lot of images are requested at once forcing this to load
 // from memory multiple times.
-function getCounterFormat(format: string): CounterFormat {
-  if (COUNTERS[format] !== undefined) {
-    return COUNTERS[format];
+function getCounterStyle(style: string): CounterStyle {
+  if (COUNTERS[style] !== undefined) {
+    return COUNTERS[style];
   }
 
-  const config: CounterFormatConfig = JSON.parse(
+  const config: CounterStyleConfig = JSON.parse(
     new TextDecoder().decode(
-      Deno.readFileSync(`source_images/${format}/config.json`),
+      Deno.readFileSync(`images/${style}/config.json`),
     ),
   );
 
-  return COUNTERS[format] = {
+  return COUNTERS[style] = {
     digitWidth: config.digitWidth,
     digitHeight: config.digitHeight,
     spacing: config.spacing,
@@ -67,34 +67,34 @@ function getCounterFormat(format: string): CounterFormat {
     backgroundColor: config.backgroundColor,
     images: {
       0: Buffer.from(
-        Deno.readFileSync(`source_images/${format}/${config.images[0]}`),
+        Deno.readFileSync(`images/${style}/${config.images[0]}`),
       ),
       1: Buffer.from(
-        Deno.readFileSync(`source_images/${format}/${config.images[1]}`),
+        Deno.readFileSync(`images/${style}/${config.images[1]}`),
       ),
       2: Buffer.from(
-        Deno.readFileSync(`source_images/${format}/${config.images[2]}`),
+        Deno.readFileSync(`images/${style}/${config.images[2]}`),
       ),
       3: Buffer.from(
-        Deno.readFileSync(`source_images/${format}/${config.images[3]}`),
+        Deno.readFileSync(`images/${style}/${config.images[3]}`),
       ),
       4: Buffer.from(
-        Deno.readFileSync(`source_images/${format}/${config.images[4]}`),
+        Deno.readFileSync(`images/${style}/${config.images[4]}`),
       ),
       5: Buffer.from(
-        Deno.readFileSync(`source_images/${format}/${config.images[5]}`),
+        Deno.readFileSync(`images/${style}/${config.images[5]}`),
       ),
       6: Buffer.from(
-        Deno.readFileSync(`source_images/${format}/${config.images[6]}`),
+        Deno.readFileSync(`images/${style}/${config.images[6]}`),
       ),
       7: Buffer.from(
-        Deno.readFileSync(`source_images/${format}/${config.images[7]}`),
+        Deno.readFileSync(`images/${style}/${config.images[7]}`),
       ),
       8: Buffer.from(
-        Deno.readFileSync(`source_images/${format}/${config.images[8]}`),
+        Deno.readFileSync(`images/${style}/${config.images[8]}`),
       ),
       9: Buffer.from(
-        Deno.readFileSync(`source_images/${format}/${config.images[9]}`),
+        Deno.readFileSync(`images/${style}/${config.images[9]}`),
       ),
     },
   };
@@ -102,7 +102,7 @@ function getCounterFormat(format: string): CounterFormat {
 
 export function createNumberImage(
   number: number,
-  format: string,
+  style: string,
   // TODO - Turn into options
   minDigits: number = 10,
 ): Promise<Buffer> {
@@ -110,15 +110,15 @@ export function createNumberImage(
     throw new Error(`Invalid number provided (${number} - must be an integer.`);
   }
 
-  const counterFormat = getCounterFormat(format);
+  const counterStyle = getCounterStyle(style);
 
   const { digitWidth, digitHeight, spacing, padding, backgroundColor } =
-    counterFormat;
+    counterStyle;
 
   const digits = String(number).padStart(minDigits, "0");
   const digitImages = digits
     .split("")
-    .map((digit: string) => counterFormat.images[`${(digit as ImageKey)}`]);
+    .map((digit: string) => counterStyle.images[`${(digit as ImageKey)}`]);
 
   const totalWidth = padding * 2 + minDigits * digitWidth +
     (minDigits - 1) * spacing;

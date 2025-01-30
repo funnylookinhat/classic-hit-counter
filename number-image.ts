@@ -1,10 +1,15 @@
-import { Buffer } from "node:buffer";
-import { type NumberImageIncomingEvent } from "./number-image-worker.ts";
+import {
+  type ConfigureNumberImageEvent,
+  type CreateNumberImageEvent,
+} from "./number-image-worker.ts";
 import { isArrayBuffer, unpackNumberFromArrayBuffer } from "./array-buffer.ts";
 import {
   generateHoistedPromise,
   type HoistedPromise,
 } from "./hoisted-promise.ts";
+import { getConfig } from "./config.ts";
+
+const config = getConfig();
 
 const workerUrl = new URL("./number-image-worker.ts", import.meta.url).href;
 const numberImageWorker = new Worker(workerUrl, {
@@ -13,16 +18,30 @@ const numberImageWorker = new Worker(workerUrl, {
 
 const pendingWorkerPromises: Record<number, HoistedPromise<Uint8Array>> = {};
 
+function configureWorker(style: string): void {
+  const configureNumberImageEvent: ConfigureNumberImageEvent = {
+    data: {
+      event: "configure",
+      style,
+    },
+  };
+
+  numberImageWorker.postMessage(configureNumberImageEvent.data);
+}
+
+configureWorker(config.COUNTER_STYLE);
+
 async function generateNumberImage(number: number): Promise<Uint8Array> {
   pendingWorkerPromises[number] = generateHoistedPromise<Uint8Array>();
 
-  const numberImageIncomingEvent: NumberImageIncomingEvent = {
+  const createNumberImageEvent: CreateNumberImageEvent = {
     data: {
+      event: "create-image",
       number,
     },
   };
 
-  numberImageWorker.postMessage(numberImageIncomingEvent.data);
+  numberImageWorker.postMessage(createNumberImageEvent.data);
 
   return pendingWorkerPromises[number].promise;
 }
