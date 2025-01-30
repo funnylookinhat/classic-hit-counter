@@ -34,3 +34,17 @@ Add a fancy visitor counter to your website - _now with analytics!_
 * Referrers
 * User Agents
 * Daily Totals
+
+*Config Values*
+
+* Cache Control
+* Site
+* Require Site Check
+* Data Directory
+* Counter Style
+* Configure Style - padding, spacing, etc.
+
+*Deployment*
+
+* Build Script
+* Docker Image
