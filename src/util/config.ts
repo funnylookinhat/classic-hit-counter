@@ -4,6 +4,9 @@ import { z } from "npm:zod";
 // The configuration validation is a bit messy - mixed up between zod and a
 // type guard.
 
+// TODO - DOCUMENT CONFIGURATION
+
+await initVariable("DEV_MODE", z.string(), "DISABLED");
 await initVariable("PORT", z.string().regex(/^[0-9]{1,5}$/), "8000");
 await initVariable(
   "COUNTER_STYLE",
@@ -14,6 +17,7 @@ await initVariable(
 export interface Config {
   PORT: number;
   COUNTER_STYLE: "blue_digital_small" | "blue_digital_large";
+  DEV_MODE: boolean;
 }
 
 function isConfig(obj: unknown): obj is Config {
@@ -36,6 +40,7 @@ export function getConfig(): Config {
     // will be present and a numeric string.
     PORT: parseInt(Deno.env.get("PORT") ?? "8080", 10),
     COUNTER_STYLE: Deno.env.get("COUNTER_STYLE"),
+    DEV_MODE: Deno.env.get("DEV_MODE") === "ENABLED",
   };
 
   if (!isConfig(c)) {

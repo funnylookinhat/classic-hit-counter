@@ -48,14 +48,14 @@ const COUNTERS: Record<string, CounterStyle> = {};
 // Purposefully made synchronous for now - can async later... avoids potential
 // race conditions if a lot of images are requested at once forcing this to load
 // from memory multiple times.
-function getCounterStyle(style: string): CounterStyle {
+async function getCounterStyle(style: string): Promise<CounterStyle> {
   if (COUNTERS[style] !== undefined) {
     return COUNTERS[style];
   }
 
   const config: CounterStyleConfig = JSON.parse(
     new TextDecoder().decode(
-      Deno.readFileSync(`images/${style}/config.json`),
+      await Deno.readFile(await (`./assets/images/${style}/config.json`)),
     ),
   );
 
@@ -67,40 +67,60 @@ function getCounterStyle(style: string): CounterStyle {
     backgroundColor: config.backgroundColor,
     images: {
       0: Buffer.from(
-        Deno.readFileSync(`images/${style}/${config.images[0]}`),
+        await Deno.readFile(
+          await (`./assets/images/${style}/${config.images[0]}`),
+        ),
       ),
       1: Buffer.from(
-        Deno.readFileSync(`images/${style}/${config.images[1]}`),
+        await Deno.readFile(
+          await (`./assets/images/${style}/${config.images[1]}`),
+        ),
       ),
       2: Buffer.from(
-        Deno.readFileSync(`images/${style}/${config.images[2]}`),
+        await Deno.readFile(
+          await (`./assets/images/${style}/${config.images[2]}`),
+        ),
       ),
       3: Buffer.from(
-        Deno.readFileSync(`images/${style}/${config.images[3]}`),
+        await Deno.readFile(
+          await (`./assets/images/${style}/${config.images[3]}`),
+        ),
       ),
       4: Buffer.from(
-        Deno.readFileSync(`images/${style}/${config.images[4]}`),
+        await Deno.readFile(
+          await (`./assets/images/${style}/${config.images[4]}`),
+        ),
       ),
       5: Buffer.from(
-        Deno.readFileSync(`images/${style}/${config.images[5]}`),
+        await Deno.readFile(
+          await (`./assets/images/${style}/${config.images[5]}`),
+        ),
       ),
       6: Buffer.from(
-        Deno.readFileSync(`images/${style}/${config.images[6]}`),
+        await Deno.readFile(
+          await (`./assets/images/${style}/${config.images[6]}`),
+        ),
       ),
       7: Buffer.from(
-        Deno.readFileSync(`images/${style}/${config.images[7]}`),
+        await Deno.readFile(
+          await (`./assets/images/${style}/${config.images[7]}`),
+        ),
       ),
       8: Buffer.from(
-        Deno.readFileSync(`images/${style}/${config.images[8]}`),
+        await Deno.readFile(
+          await (`./assets/images/${style}/${config.images[8]}`),
+        ),
       ),
       9: Buffer.from(
-        Deno.readFileSync(`images/${style}/${config.images[9]}`),
+        await Deno.readFile(
+          await (`./assets/images/${style}/${config.images[9]}`),
+        ),
       ),
     },
   };
 }
 
-export function createNumberImage(
+export async function createCounterImage(
   number: number,
   style: string,
   // TODO - Turn into options
@@ -110,7 +130,7 @@ export function createNumberImage(
     throw new Error(`Invalid number provided (${number} - must be an integer.`);
   }
 
-  const counterStyle = getCounterStyle(style);
+  const counterStyle = await getCounterStyle(style);
 
   const { digitWidth, digitHeight, spacing, padding, backgroundColor } =
     counterStyle;

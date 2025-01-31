@@ -1,17 +1,20 @@
 import {
-  type ConfigureNumberImageEvent,
-  type CreateNumberImageEvent,
-} from "./number-image-worker.ts";
-import { isArrayBuffer, unpackNumberFromArrayBuffer } from "./array-buffer.ts";
+  type ConfigureCounterImageEvent,
+  type CreateCounterImageEvent,
+} from "./worker/index.ts";
+import {
+  isArrayBuffer,
+  unpackNumberFromArrayBuffer,
+} from "@/util/array-buffer.ts";
 import {
   generateHoistedPromise,
   type HoistedPromise,
-} from "./hoisted-promise.ts";
-import { getConfig } from "./config.ts";
+} from "@/util/hoisted-promise.ts";
+import { getConfig } from "@/util/config.ts";
 
 const config = getConfig();
 
-const workerUrl = new URL("./number-image-worker.ts", import.meta.url).href;
+const workerUrl = new URL("./worker/index.ts", import.meta.url).href;
 const numberImageWorker = new Worker(workerUrl, {
   type: "module",
 });
@@ -19,29 +22,29 @@ const numberImageWorker = new Worker(workerUrl, {
 const pendingWorkerPromises: Record<number, HoistedPromise<Uint8Array>> = {};
 
 function configureWorker(style: string): void {
-  const configureNumberImageEvent: ConfigureNumberImageEvent = {
+  const configureCounterImageEvent: ConfigureCounterImageEvent = {
     data: {
       event: "configure",
       style,
     },
   };
 
-  numberImageWorker.postMessage(configureNumberImageEvent.data);
+  numberImageWorker.postMessage(configureCounterImageEvent.data);
 }
 
 configureWorker(config.COUNTER_STYLE);
 
-async function generateNumberImage(number: number): Promise<Uint8Array> {
+async function generateCounterImage(number: number): Promise<Uint8Array> {
   pendingWorkerPromises[number] = generateHoistedPromise<Uint8Array>();
 
-  const createNumberImageEvent: CreateNumberImageEvent = {
+  const createCounterImageEvent: CreateCounterImageEvent = {
     data: {
       event: "create-image",
       number,
     },
   };
 
-  numberImageWorker.postMessage(createNumberImageEvent.data);
+  numberImageWorker.postMessage(createCounterImageEvent.data);
 
   return pendingWorkerPromises[number].promise;
 }
@@ -80,7 +83,7 @@ let currentNumberIndex = 0;
 
 const DEFAULT_COUNT = 5;
 
-function fillNumberImages(
+function fillCounterImages(
   startIndex: number,
   count: number,
 ): Promise<Uint8Array> {
@@ -95,36 +98,36 @@ function fillNumberImages(
 
   for (let i = currentNumberIndex; i < currentNumberIndex + count; i++) {
     if (numberImagePromises[i] !== undefined) {
-      // console.log(`fillNumberImages: Skipping ${i}`);
+      // console.log(`fillCounterImages: Skipping ${i}`);
     } else {
-      // console.log(`fillNumberImages: Generating ${i}`);
-      numberImagePromises[i] = generateNumberImage(i);
+      // console.log(`fillCounterImages: Generating ${i}`);
+      numberImagePromises[i] = generateCounterImage(i);
     }
   }
 
   return numberImagePromises[startIndex];
 }
 
-fillNumberImages(1, DEFAULT_COUNT);
+fillCounterImages(1, DEFAULT_COUNT);
 
-export function getNumberImage(number: number): Promise<Uint8Array> {
+export function getCounterImage(number: number): Promise<Uint8Array> {
   if (!Number.isInteger(number)) {
     throw new Error(
       `Invalid number provided (${number} - must be an integer.`,
     );
   }
 
-  // Could maybe rewrite this to be managed in fillNumberImages now
+  // Could maybe rewrite this to be managed in fillCounterImages now
   // e.g. have that just check if it is undefined and return.
   if (numberImagePromises[number] === undefined) {
-    return fillNumberImages(number, DEFAULT_COUNT);
+    return fillCounterImages(number, DEFAULT_COUNT);
   }
 
   if (
     numberImagePromises[number + Math.floor(DEFAULT_COUNT / 2) + 1] ===
       undefined
   ) {
-    return fillNumberImages(number, DEFAULT_COUNT);
+    return fillCounterImages(number, DEFAULT_COUNT);
   }
 
   return numberImagePromises[number];
