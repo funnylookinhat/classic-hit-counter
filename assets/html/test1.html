@@ -1,8 +1,8 @@
 <html>
   <body>
     <div>
-      <h1>Toggle on/off to load images as quickly as possible</h1>
-      <img class="counter" src="/count.png" />
+      <h1>Toggle on/off to load images<br>as quickly as possible</h1>
+      <img class="counter" src="/site-count.png" />
       <label class="switch">
         <input type="checkbox" id="toggle" />
         <span class="slider"></span>
@@ -20,6 +20,7 @@
       
       h1 {
         margin: 0 auto 1rem auto;
+        text-align: center;
         color: #efefef;
         font-weight: bold;
         font-family: sans-serif;
@@ -83,13 +84,13 @@
 
       img.addEventListener("load", () => {
         if (toggle.checked) {
-          img.src = `/count.png?${Date.now()}`;
+          img.src = `/site-count.png?${Date.now()}`;
         }
       });
 
       toggle.addEventListener("change", () => {
         if (toggle.checked) {
-          img.src = `/count.png?${Date.now()}`;
+          img.src = `/site-count.png?${Date.now()}`;
         }
       });
     </script>
