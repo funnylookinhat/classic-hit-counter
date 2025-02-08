@@ -1,4 +1,4 @@
-import { packNumberToArrayBuffer } from "@/util/array-buffer.ts";
+import { packNumbersToArrayBuffer } from "@/util/array-buffer.ts";
 import { createCounterImage } from "./image.ts";
 
 interface DedicatedWorkerGlobalScope {
@@ -16,6 +16,7 @@ export interface CreateCounterImageEvent extends CounterImageEvent {
   data: {
     event: "create-image";
     number: number;
+    id: number;
   };
 }
 
@@ -36,7 +37,8 @@ function isCreateCounterImageEvent(
     (obj as CreateCounterImageEvent).data !== null &&
     typeof (obj as CreateCounterImageEvent).data.event === "string" &&
     (obj as CreateCounterImageEvent).data.event === "create-image" &&
-    typeof (obj as CreateCounterImageEvent).data.number === "number"
+    typeof (obj as CreateCounterImageEvent).data.number === "number" &&
+    typeof (obj as CreateCounterImageEvent).data.id === "number"
   );
 }
 
@@ -74,7 +76,7 @@ let counterStyle: string;
         counterStyle,
       )).buffer;
       (self as unknown as DedicatedWorkerGlobalScope).postMessage(
-        packNumberToArrayBuffer(e.data.number, arrayBuffer),
+        packNumbersToArrayBuffer(e.data.id, e.data.number, arrayBuffer),
       );
       return;
     } catch (error) {

@@ -1,0 +1,99 @@
+<html>
+  <body>
+    <div>
+      <h1>Toggle on/off to load images<br>as quickly as possible</h1>
+      <img class="counter" src="/hit-count.png" />
+      <label class="switch">
+        <input type="checkbox" id="toggle" />
+        <span class="slider"></span>
+      </label>
+    </div>
+    <style>
+      body {
+        background: #000;
+        display: flex; /* Enable flexbox */
+        justify-content: center; /* Center horizontally */
+        align-items: center; /* Center vertically */
+        height: 100vh; /* Full viewport height */
+        margin: 0; /* Remove default margin */
+      }
+      
+      h1 {
+        margin: 0 auto 1rem auto;
+        text-align: center;
+        color: #efefef;
+        font-weight: bold;
+        font-family: sans-serif;
+      }
+
+      img.counter {
+        margin: 0 auto;
+        height: 4rem;
+      }
+
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 5rem;
+        height: 2rem;
+        top: -2.5rem;
+        margin-left: 2rem;
+      }
+
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: 0.4s;
+        border-radius: 1rem; /* Rounded corners */
+      }
+
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 1.6rem; /* Height of the slider handle */
+        width: 1.6rem; /* Width of the slider handle */
+        border-radius: 50%; /* Make it round */
+        left: 0.2rem; /* Space from the left */
+        bottom: 0.2rem; /* Space from the bottom */
+        background-color: white;
+        transition: 0.4s;
+      }
+
+      input:checked + .slider {
+        background-color: #4caf50;
+      }
+
+      input:checked + .slider:before {
+        transform: translateX(3rem); /* Move the handle to the right */
+      }
+    </style>
+    <script type="text/javascript">
+      const img = document.querySelector("img.counter");
+      const imgSrc = img.src;
+      const toggle = document.getElementById("toggle");
+
+      img.addEventListener("load", () => {
+        if (toggle.checked) {
+          img.src = `${imgSrc}?${Date.now()}`;
+        }
+      });
+
+      toggle.addEventListener("change", () => {
+        if (toggle.checked) {
+          img.src = `${imgSrc}?${Date.now()}`;
+        }
+      });
+    </script>
+  </body>
+</html>

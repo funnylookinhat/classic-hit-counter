@@ -1,26 +1,48 @@
 import { Hono } from "hono";
 import { serveStatic } from "hono/deno";
 import { compress } from "hono/compress";
-import { getCounterImage } from "@/services/counter-image/index.ts";
+import { getCounterImage } from "../services/counter-image/mod.ts";
 import { getConfig } from "@/util/config.ts";
+import { getVisitTotals, handleRequest } from "../services/site-visit/mod.ts";
 
 const config = getConfig();
 
 const app = new Hono();
 
-let i = 0;
-
 app.use(compress());
+
 if (config.DEV_MODE) {
-  app.use("/test.html", serveStatic({ path: "./assets/html/test.html" }));
+  app.use("/html/*", serveStatic({ root: "./assets/" }));
 }
-app.get("/count.png", async (c) => {
-  if (config.DEV_MODE) {
-    console.log(`Request Headers: `, c.req.header());
-  }
-  return c.body(await getCounterImage(++i), 200, {
+
+app.get("/site-count.png", async (c) => {
+  const siteVisit = handleRequest(c);
+
+  return c.body(await getCounterImage(siteVisit.siteVisit), 200, {
     "Content-Type": "image/png",
   });
+});
+
+app.get("/hit-count.png", async (c) => {
+  const siteVisit = handleRequest(c);
+
+  return c.body(await getCounterImage(siteVisit.siteHit), 200, {
+    "Content-Type": "image/png",
+  });
+});
+
+app.get("/page-count.png", async (c) => {
+  const siteVisit = handleRequest(c);
+
+  return c.body(await getCounterImage(siteVisit.pageVisit), 200, {
+    "Content-Type": "image/png",
+  });
+});
+
+// TODO - Consider a /page-count.png
+
+app.get("/stats.json", async (c) => {
+  return c.json(getVisitTotals(), 200);
 });
 
 Deno.serve({ port: config.PORT }, app.fetch);

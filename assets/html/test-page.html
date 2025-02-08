@@ -2,7 +2,7 @@
   <body>
     <div>
       <h1>Toggle on/off to load images<br>as quickly as possible</h1>
-      <img class="counter" src="/count.png" />
+      <img class="counter" src="/page-count.png" />
       <label class="switch">
         <input type="checkbox" id="toggle" />
         <span class="slider"></span>
@@ -80,17 +80,18 @@
     </style>
     <script type="text/javascript">
       const img = document.querySelector("img.counter");
+      const imgSrc = img.src;
       const toggle = document.getElementById("toggle");
 
       img.addEventListener("load", () => {
         if (toggle.checked) {
-          img.src = `/count.png?${Date.now()}`;
+          img.src = `${imgSrc}?${Date.now()}`;
         }
       });
 
       toggle.addEventListener("change", () => {
         if (toggle.checked) {
-          img.src = `/count.png?${Date.now()}`;
+          img.src = `${imgSrc}?${Date.now()}`;
         }
       });
     </script>
