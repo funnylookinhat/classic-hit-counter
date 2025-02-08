@@ -16,8 +16,6 @@ Add a fancy visitor counter to your website - _now with analytics!_
 
 == TODO List
 
-* Refactor to mod.ts
-* Add cookie check and IP check
 * Setup cache control headers
 ** 1 hour
 

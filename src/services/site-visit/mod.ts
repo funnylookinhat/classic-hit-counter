@@ -1,0 +1,336 @@
+import { type Context } from "hono";
+import { getConnInfo } from "hono/deno";
+import { guess as guessUserAgent } from "@wundero/uap-ts";
+import { getConfig } from "@/util/config.ts";
+import TTLCache from "@isaacs/ttlcache";
+
+const config = getConfig();
+
+export interface Visit {
+  siteHit: number;
+  siteVisit: number;
+  page: string;
+  pageVisit: number;
+  userAgent: {
+    browserType: string;
+    browserTypeVisit: number;
+    browser: string;
+    browserVisit: number;
+    deviceType: string;
+    deviceTypeVisit: number;
+    osDevice: string;
+    osDeviceVisit: number;
+  };
+}
+
+export interface VisitTotals {
+  siteHits: number;
+  siteVisits: number;
+  pageVisits: Record<string, number>;
+  userAgentVisits: {
+    browserType: Record<string, number>;
+    browser: Record<string, number>;
+    deviceType: Record<string, number>;
+    osDevice: Record<string, number>;
+  };
+}
+
+export type PageIndexes = Record<string, number>;
+
+/**
+ * Load the visit totals from disk or init a new object.
+ * @returns Visit totals
+ */
+async function loadVisitTotals(): Promise<VisitTotals> {
+  try {
+    const visitTotals: VisitTotals = JSON.parse(
+      new TextDecoder().decode(
+        await Deno.readFile(
+          await (`${config.DATA_DIR}/site-visit-totals.json`),
+        ),
+      ),
+    );
+    return visitTotals;
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) {
+      const visitTotals: VisitTotals = {
+        siteHits: 0,
+        siteVisits: 0,
+        pageVisits: {},
+        userAgentVisits: {
+          browserType: {},
+          browser: {},
+          deviceType: {},
+          osDevice: {},
+        },
+      };
+      return visitTotals;
+    }
+    throw error;
+  }
+}
+
+/**
+ * Save the visit totals to file so that it can be referenced on restart.
+ */
+async function saveVisitTotals(): Promise<void> {
+  await Deno.mkdir(config.DATA_DIR, { recursive: true });
+  await Deno.writeTextFile(
+    `${config.DATA_DIR}/site-visit-totals.json`,
+    JSON.stringify(visitTotals),
+  );
+}
+
+const visitTotals = await loadVisitTotals();
+
+/**
+ * Load the page index data from file, or init a new page index.
+ * @returns Page index and next page index.
+ */
+async function loadPageIndexFromFile(): Promise<
+  { pageIndexes: PageIndexes; nextPageIndex: number }
+> {
+  try {
+    const pageIndexes: PageIndexes = JSON.parse(
+      new TextDecoder().decode(
+        await Deno.readFile(
+          await (`${config.DATA_DIR}/page-indexes.json`),
+        ),
+      ),
+    );
+    const nextPageIndex = (Object.values(pageIndexes).sort().shift() ?? 0) + 1;
+    return { pageIndexes, nextPageIndex };
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) {
+      const pageIndexes: PageIndexes = {
+        "unknown": 0,
+        "/": 1,
+      };
+      return { pageIndexes, nextPageIndex: 2 };
+    }
+    throw error;
+  }
+}
+
+/**
+ * Save the page index data to a file so that it can be referenced on restart.
+ */
+async function savePageIndexes(): Promise<void> {
+  await Deno.mkdir(config.DATA_DIR, { recursive: true });
+  await Deno.writeTextFile(
+    `${config.DATA_DIR}/page-indexes.json`,
+    JSON.stringify(pageIndexes),
+  );
+}
+
+const pageIndexData = await loadPageIndexFromFile();
+const pageIndexes = pageIndexData.pageIndexes;
+let nextPageIndex = pageIndexData.nextPageIndex;
+
+setInterval(async function () {
+  try {
+    await saveVisitTotals();
+  } catch (error) {
+    console.error(`Could not write site visit totals: ${error}`);
+  }
+}, config.DEV_MODE ? 5 * 1000 : 60 * 1000);
+
+/**
+ * Given a URL, will return the path by stripping the domain.  If parsing fails,
+ * will return "/"
+ * @param url The URL to parse
+ * @returns The path
+ */
+function getUrlPath(url: string): string {
+  try {
+    // If url is relative, just return it.
+    if (url.startsWith("/")) {
+      return url;
+    }
+
+    const parsedUrl = new URL(url.includes("://") ? url : "http://" + url);
+    return parsedUrl.pathname;
+  } catch {
+    return "/";
+  }
+}
+
+/**
+ * Returns the "page" from the provided referer by stripping out site.
+ * If a referer is present, it will always return a value with a leading slash.
+ * If no referer is present, will return "unknown"
+ *
+ * @param c Request context
+ * @returns The parsed page.  "unknown" if no referer is present.
+ */
+function getRequestPage(c: Context): string {
+  const referer = c.req.header("referer");
+
+  if (!referer) {
+    return "unknown";
+  }
+  if (!config.SITE_DOMAIN || !config.SITE_DOMAIN.length) {
+    return getUrlPath(referer);
+  }
+  const i = referer.indexOf(config.SITE_DOMAIN);
+  if (i === -1) {
+    if (config.REQUIRE_SITE_DOMAIN) {
+      return "unknown";
+    }
+    return referer.startsWith("/") ? referer : "/" + referer;
+  }
+  const page = referer.substring(i + config.SITE_DOMAIN.length);
+
+  return page.startsWith("/") ? page : `/${page}`;
+}
+
+/**
+ * Hashes a given page so that it can be stored as a visited page in a cookie.
+ * This depends on loadCookiePage() having been called already.
+ * @param page The page to hash.
+ * @returns {string} The hashed value to store in a cookie to represent a given
+ * page.
+ */
+function getPageIndex(page: string): number {
+  if (pageIndexes[page] === undefined) {
+    pageIndexes[page] = nextPageIndex++;
+    savePageIndexes();
+  }
+  return pageIndexes[page];
+}
+
+/**
+ * Get the IP making the request.
+ * @param c Request context
+ * @returns IP Address
+ */
+function getRequestIp(c: Context): string {
+  const info = getConnInfo(c);
+  let ip = info.remote.address;
+  if (c.req.header(config.IP_HEADER)) {
+    ip = c.req.header(config.IP_HEADER);
+  }
+  if (ip === undefined) {
+    ip = "unknown";
+  }
+  return ip;
+}
+
+const pageVisitIpCache = new TTLCache<string, number[]>({
+  max: config.MAX_IP_TRACKING,
+  ttl: 1000 * 60 * 60 * 24,
+});
+
+export function handleRequest(c: Context): Visit {
+  const ip = getRequestIp(c);
+
+  const page = getRequestPage(c);
+  const pageIndex = getPageIndex(page);
+
+  const userAgent = guessUserAgent(c.req.header("user-agent") ?? "");
+  const browserType = userAgent.browser.type?.toLowerCase() ?? "unknown";
+  const browser = userAgent.browser.name?.toLowerCase() ?? "unknown";
+  const deviceType = userAgent.device.type?.toLowerCase() ?? "unknown";
+  const osDevice = (userAgent.os.typeGuess?.toLowerCase() ?? "unknown") + "." +
+    (userAgent.os.name?.toLowerCase() ?? "unknown");
+
+  let ipPageVisit = pageVisitIpCache.get(ip);
+
+  // We only want to record site and page visits if there is a referer - e.g.
+  // the image was loaded from a page.  Otherwise, we'll only increment hit
+  // counter.
+  const recordSiteVisit = page !== "unknown" &&
+    ipPageVisit === undefined;
+  const recordPageVisit = page !== "unknown" &&
+    (ipPageVisit === undefined || !ipPageVisit.includes(pageIndex));
+
+  if (recordPageVisit) {
+    if (ipPageVisit === undefined) {
+      ipPageVisit = [];
+    }
+    ipPageVisit.push(pageIndex);
+
+    pageVisitIpCache.set(ip, ipPageVisit);
+  }
+
+  // This may seem long-winded... but it's easier to read than putting a bunch
+  // of nested ternarnies into the object.  The ternaries feel easier to
+  // maintain than a long set of if/else statement.
+  // A generic helper method would be a neat idea to refactor with.
+
+  // Hits always increment
+  const siteHit = ++visitTotals.siteHits;
+  // Site visits will increment once per IP per 24 hours
+  const siteVisit = recordSiteVisit
+    ? ++visitTotals.siteVisits
+    : visitTotals.siteVisits;
+  // Page visits will increment once per IP per Page per 24 hours
+  const pageVisit = recordPageVisit
+    // If recording page visit, either increment page or set to 1 in memory
+    ? (visitTotals.pageVisits[page]
+      ? ++visitTotals.pageVisits[page]
+      : (visitTotals.pageVisits[page] = 1))
+    // Otherwise, read page from memory or return 0 (not setting in memory)
+    : (visitTotals.pageVisits[page] ? visitTotals.pageVisits[page] : 0);
+
+  // All user agent visits follow site visit logic.  Once per IP per 24 hours
+  const browserTypeVisit = recordSiteVisit
+    // If recording, increment or set to 1 in memory
+    ? (visitTotals.userAgentVisits.browserType[browserType]
+      ? ++visitTotals.userAgentVisits.browserType[browserType]
+      : (visitTotals.userAgentVisits.browserType[browserType] = 1))
+    // Otherwise, read from memory or return 0
+    : (visitTotals.userAgentVisits.browserType[browserType]
+      ? visitTotals.userAgentVisits.browserType[browserType]
+      : 0);
+  const browserVisit = recordSiteVisit
+    // If recording, increment or set to 1 in memory
+    ? (visitTotals.userAgentVisits.browser[browser]
+      ? ++visitTotals.userAgentVisits.browser[browser]
+      : (visitTotals.userAgentVisits.browser[browser] = 1))
+    // Otherwise, read from memory or return 0
+    : (visitTotals.userAgentVisits.browser[browser]
+      ? visitTotals.userAgentVisits.browser[browser]
+      : 0);
+  const deviceTypeVisit = recordSiteVisit
+    // If recording, increment or set to 1 in memory
+    ? (visitTotals.userAgentVisits.deviceType[deviceType]
+      ? ++visitTotals.userAgentVisits.deviceType[deviceType]
+      : (visitTotals.userAgentVisits.deviceType[deviceType] = 1))
+    // Otherwise, read from memory or return 0
+    : (visitTotals.userAgentVisits.deviceType[deviceType]
+      ? visitTotals.userAgentVisits.deviceType[deviceType]
+      : 0);
+  const osDeviceVisit = recordSiteVisit
+    // If recording, increment or set to 1 in memory
+    ? (visitTotals.userAgentVisits.osDevice[osDevice]
+      ? ++visitTotals.userAgentVisits.osDevice[osDevice]
+      : (visitTotals.userAgentVisits.osDevice[osDevice] = 1))
+    // Otherwise, read from memory or return 0
+    : (visitTotals.userAgentVisits.osDevice[osDevice]
+      ? visitTotals.userAgentVisits.osDevice[osDevice]
+      : 0);
+
+  const siteVisitData: Visit = {
+    siteHit,
+    siteVisit,
+    page,
+    pageVisit,
+    userAgent: {
+      browserType,
+      browserTypeVisit,
+      browser,
+      browserVisit,
+      deviceType,
+      deviceTypeVisit,
+      osDevice,
+      osDeviceVisit,
+    },
+  };
+
+  return siteVisitData;
+}
+
+export function getVisitTotals(): VisitTotals {
+  return visitTotals;
+}
