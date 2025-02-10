@@ -5,14 +5,11 @@
   },
   "imports": {
     "@/": "./src/",
-    "@funnylookinhat/base62": "jsr:@funnylookinhat/base62@^0.0.1",
     "@isaacs/ttlcache": "npm:@isaacs/ttlcache@^1.4.1",
     "@std/assert": "jsr:@std/assert@1",
     "@std/path": "jsr:@std/path@^1.0.8",
-    "@wuespace/envar": "jsr:@wuespace/envar@^1.1.1",
     "@wundero/uap-ts": "jsr:@wundero/uap-ts@^1.0.3",
     "hono": "npm:hono@^4.6.18",
-    "sharp": "npm:sharp@^0.33.5",
-    "zod": "npm:zod@^3.24.1"
+    "sharp": "npm:sharp@^0.33.5"
   }
 }
