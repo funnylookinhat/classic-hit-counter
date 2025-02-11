@@ -6,9 +6,9 @@
   "imports": {
     "@/": "./src/",
     "@isaacs/ttlcache": "npm:@isaacs/ttlcache@^1.4.1",
-    "@josefabio/deno-canvas": "jsr:@josefabio/deno-canvas@^1.5.2",
     "@std/path": "jsr:@std/path@^1.0.8",
     "@wundero/uap-ts": "jsr:@wundero/uap-ts@^1.0.3",
-    "hono": "npm:hono@^4.6.18"
+    "hono": "npm:hono@^4.6.18",
+    "sharp": "npm:sharp@^0.33.5"
   }
 }

@@ -65,8 +65,14 @@ let fallbackImageArrayBuffer: ArrayBufferLike;
 ) => {
   if (isConfigureCounterImageEvent(e)) {
     counterStyle = e.data.style;
-    fallbackImageArrayBuffer =
-      (await createCounterImage(0, counterStyle)).buffer;
+    try {
+      fallbackImageArrayBuffer =
+        (await createCounterImage(0, counterStyle)).buffer;
+    } catch (error) {
+      console.error(
+        `CounterImageWorker - Failed to generate fallback image: ${error}`,
+      );
+    }
     return;
   }
 
@@ -84,16 +90,19 @@ let fallbackImageArrayBuffer: ArrayBufferLike;
       );
       return;
     } catch (error) {
-      console.error(`CounterImageWorker Error: ${error}`);
+      console.error(
+        `CounterImageWorker - Failed to generate image: ${error}`,
+      );
       if (fallbackImageArrayBuffer !== undefined) {
         (self as unknown as DedicatedWorkerGlobalScope).postMessage(
           packNumbersToArrayBuffer(
             e.data.id,
             e.data.number,
-            new Uint8Array(fallbackImageArrayBuffer),
+            fallbackImageArrayBuffer,
           ),
         );
       }
+      return;
     }
   }
 

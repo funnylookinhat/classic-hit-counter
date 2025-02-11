@@ -1,8 +1,4 @@
-import {
-  createCanvas,
-  EmulatedCanvas2D,
-  loadImage,
-} from "@josefabio/deno-canvas";
+import sharp from "sharp";
 import { Buffer } from "node:buffer";
 import { getPathToFile } from "@/util/path-root.ts";
 
@@ -129,50 +125,49 @@ async function getCounterStyle(style: string): Promise<CounterStyle> {
 export async function createCounterImage(
   number: number,
   style: string,
-  minDigits = 10,
+  // TODO - Turn into options
+  minDigits: number = 10,
 ): Promise<Buffer> {
   if (!Number.isInteger(number)) {
-    throw new Error(
-      `Invalid number provided (${number}) - must be an integer.`,
-    );
+    throw new Error(`Invalid number provided (${number} - must be an integer.`);
   }
 
   const counterStyle = await getCounterStyle(style);
+
   const { digitWidth, digitHeight, spacing, padding, backgroundColor } =
     counterStyle;
 
-  // Convert the number to the string padded to the minimum digits:
   const digits = String(number).padStart(minDigits, "0");
-
-  // Gather the buffers for each digit
-  const digitBuffers = digits.split("").map((digit) =>
-    counterStyle.images[digit as ImageKey]
-  );
+  const digitImages = digits
+    .split("")
+    .map((digit: string) => counterStyle.images[`${(digit as ImageKey)}`]);
 
   const totalWidth = padding * 2 + minDigits * digitWidth +
     (minDigits - 1) * spacing;
   const totalHeight = padding * 2 + digitHeight;
 
-  // Create a canvas and its 2D context
-  const canvas = createCanvas(totalWidth, totalHeight);
-  const ctx = canvas.getContext("2d");
-
-  // Fill the background
-  ctx.fillStyle = backgroundColor;
-  ctx.fillRect(0, 0, totalWidth, totalHeight);
-
-  // Draw each digit
-  for (let i = 0; i < digitBuffers.length; i++) {
+  // Load and position each digit image
+  const compositeOptions = [];
+  for (let i = 0; i < digitImages.length; i++) {
     const x = padding + i * (digitWidth + spacing);
     const y = padding;
-
-    // loadImage can load from a Blob, URL, or Uint8Array. We convert the Buffer to Uint8Array.
-    const image = await loadImage(new Uint8Array(digitBuffers[i]));
-    ctx.drawImage(image, x, y, digitWidth, digitHeight);
+    compositeOptions.push({
+      input: digitImages[i],
+      top: y,
+      left: x,
+    });
   }
 
-  // Export to PNG bytes
-  const pngBytes = canvas.toBuffer("image/png");
-  // Return as a Node.js Buffer if desired
-  return Buffer.from(pngBytes);
+  // Create the output image
+  return sharp({
+    create: {
+      width: totalWidth,
+      height: totalHeight,
+      channels: 4,
+      background: backgroundColor,
+    },
+  })
+    .composite(compositeOptions)
+    .toFormat("png")
+    .toBuffer();
 }
