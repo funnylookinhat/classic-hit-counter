@@ -53,7 +53,7 @@ function validateConfig(c: Config): void {
 
 export function getConfig(): Config {
   const c = {
-    PORT: parseInt(Deno.env.get("PORT") ?? "8080", 10),
+    PORT: parseInt(Deno.env.get("PORT") ?? "8000", 10),
     COUNTER_STYLE: Deno.env.get("COUNTER_STYLE") ?? "blue_digital_small",
     DEV_MODE: Deno.env.get("DEV_MODE") === "ENABLED",
     SITE_DOMAIN: Deno.env.get("SITE_DOMAIN") ?? "",

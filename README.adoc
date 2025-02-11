@@ -16,29 +16,13 @@ Add a fancy visitor counter to your website - _now with analytics!_
 
 == TODO List
 
+* Minimum Image Digits Configuration
 * Setup cache control headers
 ** 1 hour
 * Docker image
 * Document configuration
-
-*Basic implementation goals:*
-
-* Minimum Image Digits
-
-*Image Stuff*
-
-* Set a TTL on image data in memory, esp. if we accidentally generate an old
-  count twice.
-* Maybe make it so that any image below current count has a TTL of 5 minutes.
-
-*Config Values*
-
-* Cache Control
-* Site
-* Require Site Check
-* Data Directory
-* Counter Style
-* Configure Style - padding, spacing, etc.
+* Release Workflow
+** Grab inspiration from this - https://github.com/wuespace/envar/blob/main/scripts/release.ts#L111-L115
 
 *Deployment*
 
@@ -46,7 +30,6 @@ Add a fancy visitor counter to your website - _now with analytics!_
 * Docker Image
 
 == Some things I've learned
-
 
 === deno compile + node packages
 
