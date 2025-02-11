@@ -1,5 +1,6 @@
 import { packNumbersToArrayBuffer } from "@/util/array-buffer.ts";
 import { createCounterImage } from "./image.ts";
+import { Buffer } from "node:buffer";
 
 interface DedicatedWorkerGlobalScope {
   onmessage: (e: MessageEvent) => void;
@@ -57,12 +58,15 @@ function isConfigureCounterImageEvent(
 }
 
 let counterStyle: string;
+let fallbackImageArrayBuffer: ArrayBufferLike;
 
 (self as unknown as DedicatedWorkerGlobalScope).onmessage = async (
   e: MessageEvent<CounterImageEvent>,
 ) => {
   if (isConfigureCounterImageEvent(e)) {
     counterStyle = e.data.style;
+    fallbackImageArrayBuffer =
+      (await createCounterImage(0, counterStyle)).buffer;
     return;
   }
 
@@ -80,7 +84,16 @@ let counterStyle: string;
       );
       return;
     } catch (error) {
-      return console.error(`CounterImageWorkerOptimized Error: ${error}`);
+      console.error(`CounterImageWorker Error: ${error}`);
+      if (fallbackImageArrayBuffer !== undefined) {
+        (self as unknown as DedicatedWorkerGlobalScope).postMessage(
+          packNumbersToArrayBuffer(
+            e.data.id,
+            e.data.number,
+            new Uint8Array(fallbackImageArrayBuffer),
+          ),
+        );
+      }
     }
   }
 

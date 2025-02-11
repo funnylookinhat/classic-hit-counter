@@ -1,5 +1,10 @@
-import { createCanvas, loadImage } from "@josefabio/deno-canvas";
+import {
+  createCanvas,
+  EmulatedCanvas2D,
+  loadImage,
+} from "@josefabio/deno-canvas";
 import { Buffer } from "node:buffer";
+import { getPathToFile } from "@/util/path-root.ts";
 
 interface CounterStyleConfig {
   digitWidth: number;
@@ -54,7 +59,9 @@ async function getCounterStyle(style: string): Promise<CounterStyle> {
 
   const config: CounterStyleConfig = JSON.parse(
     new TextDecoder().decode(
-      await Deno.readFile(`./assets/images/${style}/config.json`),
+      await Deno.readFile(
+        getPathToFile(`/assets/images/${style}/config.json`),
+      ),
     ),
   );
 
@@ -66,34 +73,54 @@ async function getCounterStyle(style: string): Promise<CounterStyle> {
     backgroundColor: config.backgroundColor,
     images: {
       0: Buffer.from(
-        await Deno.readFile(`./assets/images/${style}/${config.images[0]}`),
+        await Deno.readFile(
+          getPathToFile(`/assets/images/${style}/${config.images[0]}`),
+        ),
       ),
       1: Buffer.from(
-        await Deno.readFile(`./assets/images/${style}/${config.images[1]}`),
+        await Deno.readFile(
+          getPathToFile(`/assets/images/${style}/${config.images[1]}`),
+        ),
       ),
       2: Buffer.from(
-        await Deno.readFile(`./assets/images/${style}/${config.images[2]}`),
+        await Deno.readFile(
+          getPathToFile(`/assets/images/${style}/${config.images[2]}`),
+        ),
       ),
       3: Buffer.from(
-        await Deno.readFile(`./assets/images/${style}/${config.images[3]}`),
+        await Deno.readFile(
+          getPathToFile(`/assets/images/${style}/${config.images[3]}`),
+        ),
       ),
       4: Buffer.from(
-        await Deno.readFile(`./assets/images/${style}/${config.images[4]}`),
+        await Deno.readFile(
+          getPathToFile(`/assets/images/${style}/${config.images[4]}`),
+        ),
       ),
       5: Buffer.from(
-        await Deno.readFile(`./assets/images/${style}/${config.images[5]}`),
+        await Deno.readFile(
+          getPathToFile(`/assets/images/${style}/${config.images[5]}`),
+        ),
       ),
       6: Buffer.from(
-        await Deno.readFile(`./assets/images/${style}/${config.images[6]}`),
+        await Deno.readFile(
+          getPathToFile(`/assets/images/${style}/${config.images[6]}`),
+        ),
       ),
       7: Buffer.from(
-        await Deno.readFile(`./assets/images/${style}/${config.images[7]}`),
+        await Deno.readFile(
+          getPathToFile(`/assets/images/${style}/${config.images[7]}`),
+        ),
       ),
       8: Buffer.from(
-        await Deno.readFile(`./assets/images/${style}/${config.images[8]}`),
+        await Deno.readFile(
+          getPathToFile(`/assets/images/${style}/${config.images[8]}`),
+        ),
       ),
       9: Buffer.from(
-        await Deno.readFile(`./assets/images/${style}/${config.images[9]}`),
+        await Deno.readFile(
+          getPathToFile(`/assets/images/${style}/${config.images[9]}`),
+        ),
       ),
     },
   };

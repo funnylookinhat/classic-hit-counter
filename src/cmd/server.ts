@@ -4,6 +4,7 @@ import { compress } from "hono/compress";
 import { getCounterImage } from "../services/counter-image/mod.ts";
 import { getConfig } from "@/util/config.ts";
 import { getVisitTotals, handleRequest } from "../services/site-visit/mod.ts";
+import { getPathToFile } from "@/util/path-root.ts";
 
 const config = getConfig();
 
@@ -12,7 +13,7 @@ const app = new Hono();
 app.use(compress());
 
 if (config.DEV_MODE) {
-  app.use("/html/*", serveStatic({ root: "./assets/" }));
+  app.use("/html/*", serveStatic({ root: getPathToFile("assets/") }));
 }
 
 app.get("/site-count.png", async (c) => {
