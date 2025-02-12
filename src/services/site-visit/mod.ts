@@ -271,7 +271,7 @@ export function handleRequest(c: Context): Visit {
   console.log(
     `SiteVisit.handleRequest: page=${page} pageIndex=${pageIndex} ipPagevisit=${
       JSON.stringify(ipPageVisit)
-    } userAgent=${userAgent}`,
+    } browserType=${browserType} browser=${browser} deviceType=${deviceType} osDevice=${osDevice}`,
   );
 
   // We only want to record site and page visits if there is a referer - e.g.

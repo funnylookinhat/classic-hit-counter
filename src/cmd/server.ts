@@ -32,6 +32,7 @@ app.get("/site-count.png", async (c) => {
 
   return c.body(await getCounterImage(siteVisit.siteVisit), 200, {
     "Content-Type": "image/png",
+    "Cache-Control": "no-cache",
   });
 });
 
@@ -40,6 +41,7 @@ app.get("/hit-count.png", async (c) => {
 
   return c.body(await getCounterImage(siteVisit.siteHit), 200, {
     "Content-Type": "image/png",
+    "Cache-Control": "no-cache",
   });
 });
 
@@ -48,11 +50,14 @@ app.get("/page-count.png", async (c) => {
 
   return c.body(await getCounterImage(siteVisit.pageVisit), 200, {
     "Content-Type": "image/png",
+    "Cache-Control": "no-cache",
   });
 });
 
 app.get("/stats.json", async (c) => {
-  return c.json(getVisitTotals(), 200);
+  return c.json(getVisitTotals(), 200, {
+    "Cache-Control": "no-cache",
+  });
 });
 
 Deno.serve({ port: config.PORT }, app.fetch);
