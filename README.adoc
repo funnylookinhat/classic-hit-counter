@@ -5,48 +5,25 @@ Add a fancy visitor counter to your website - _now with analytics!_
 == Current Features
 
 * Generates a counter image in one of styles (Configurable via ENV).
-** Counter images are generated in a worker, and pre-generated 5 beyond the
-   current count so that we can respond quickly.
+** Counter images are generated in a worker.
 * Optionally only count traffic from accepted domains (Configurable via ENV).
 ** e.g. if someone hits /count.png from outside of a page, there will be no
    referrer present, and thus the count can be ignored.
 * A test page to load test the functionality (or just for fun to watch the
   numbers go up).
 ** Accessible via /test.html - only when env `DEV_MODE === "ENABLED"`
+* Stats are available at /stats.json
 
 == TODO List
 
-* Setup cache control headers
+* Consider cache control headers
 ** 1 hour
-* Docker image
+** Make configurable - because otherwise we want it to reload every time.
 * Document configuration
-
-*Basic implementation goals:*
-
-* Minimum Image Digits
-
-*Image Stuff*
-
-* Set a TTL on image data in memory, esp. if we accidentally generate an old
-  count twice.
-* Maybe make it so that any image below current count has a TTL of 5 minutes.
-
-*Config Values*
-
-* Cache Control
-* Site
-* Require Site Check
-* Data Directory
-* Counter Style
-* Configure Style - padding, spacing, etc.
-
-*Deployment*
-
-* Build Script
-* Docker Image
+* Release Workflow
+** Grab inspiration from this - https://github.com/wuespace/envar/blob/main/scripts/release.ts#L111-L115
 
 == Some things I've learned
-
 
 === deno compile + node packages
 

@@ -1,5 +1,6 @@
 import sharp from "sharp";
 import { Buffer } from "node:buffer";
+import { getPathToFile } from "@/util/path-root.ts";
 
 interface CounterStyleConfig {
   digitWidth: number;
@@ -45,9 +46,8 @@ type ImageKey = keyof CounterStyle["images"];
 
 const COUNTERS: Record<string, CounterStyle> = {};
 
-// Purposefully made synchronous for now - can async later... avoids potential
-// race conditions if a lot of images are requested at once forcing this to load
-// from memory multiple times.
+// Load a style from disk (digit images, config, etc.) only once.
+// Results are cached in `COUNTERS`.
 async function getCounterStyle(style: string): Promise<CounterStyle> {
   if (COUNTERS[style] !== undefined) {
     return COUNTERS[style];
@@ -55,7 +55,9 @@ async function getCounterStyle(style: string): Promise<CounterStyle> {
 
   const config: CounterStyleConfig = JSON.parse(
     new TextDecoder().decode(
-      await Deno.readFile(await (`./assets/images/${style}/config.json`)),
+      await Deno.readFile(
+        getPathToFile(`/assets/images/${style}/config.json`),
+      ),
     ),
   );
 
@@ -68,52 +70,52 @@ async function getCounterStyle(style: string): Promise<CounterStyle> {
     images: {
       0: Buffer.from(
         await Deno.readFile(
-          await (`./assets/images/${style}/${config.images[0]}`),
+          getPathToFile(`/assets/images/${style}/${config.images[0]}`),
         ),
       ),
       1: Buffer.from(
         await Deno.readFile(
-          await (`./assets/images/${style}/${config.images[1]}`),
+          getPathToFile(`/assets/images/${style}/${config.images[1]}`),
         ),
       ),
       2: Buffer.from(
         await Deno.readFile(
-          await (`./assets/images/${style}/${config.images[2]}`),
+          getPathToFile(`/assets/images/${style}/${config.images[2]}`),
         ),
       ),
       3: Buffer.from(
         await Deno.readFile(
-          await (`./assets/images/${style}/${config.images[3]}`),
+          getPathToFile(`/assets/images/${style}/${config.images[3]}`),
         ),
       ),
       4: Buffer.from(
         await Deno.readFile(
-          await (`./assets/images/${style}/${config.images[4]}`),
+          getPathToFile(`/assets/images/${style}/${config.images[4]}`),
         ),
       ),
       5: Buffer.from(
         await Deno.readFile(
-          await (`./assets/images/${style}/${config.images[5]}`),
+          getPathToFile(`/assets/images/${style}/${config.images[5]}`),
         ),
       ),
       6: Buffer.from(
         await Deno.readFile(
-          await (`./assets/images/${style}/${config.images[6]}`),
+          getPathToFile(`/assets/images/${style}/${config.images[6]}`),
         ),
       ),
       7: Buffer.from(
         await Deno.readFile(
-          await (`./assets/images/${style}/${config.images[7]}`),
+          getPathToFile(`/assets/images/${style}/${config.images[7]}`),
         ),
       ),
       8: Buffer.from(
         await Deno.readFile(
-          await (`./assets/images/${style}/${config.images[8]}`),
+          getPathToFile(`/assets/images/${style}/${config.images[8]}`),
         ),
       ),
       9: Buffer.from(
         await Deno.readFile(
-          await (`./assets/images/${style}/${config.images[9]}`),
+          getPathToFile(`/assets/images/${style}/${config.images[9]}`),
         ),
       ),
     },
@@ -140,8 +142,8 @@ export async function createCounterImage(
     .split("")
     .map((digit: string) => counterStyle.images[`${(digit as ImageKey)}`]);
 
-  const totalWidth = padding * 2 + minDigits * digitWidth +
-    (minDigits - 1) * spacing;
+  const totalWidth = padding * 2 + digits.length * digitWidth +
+    (digits.length - 1) * spacing;
   const totalHeight = padding * 2 + digitHeight;
 
   // Load and position each digit image

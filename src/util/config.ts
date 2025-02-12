@@ -10,6 +10,7 @@ export interface Config {
   DATA_DIR: string;
   IP_HEADER: string;
   MAX_IP_TRACKING: number;
+  MINIMUM_IMAGE_DIGITS: number;
 }
 
 const COUNTER_STYLE_OPTIONS = ["blue_digital_small", "blue_digital_large"];
@@ -24,6 +25,7 @@ function isConfig(obj: unknown): obj is Config {
     (obj as Config).PORT >= 0 &&
     (obj as Config).PORT <= 65535 &&
     typeof (obj as Config).MAX_IP_TRACKING === "number" &&
+    typeof (obj as Config).MINIMUM_IMAGE_DIGITS === "number" &&
     typeof (obj as Config).COUNTER_STYLE === "string" &&
     typeof (obj as Config).DATA_DIR === "string" &&
     typeof (obj as Config).SITE_DOMAIN === "string" &&
@@ -49,18 +51,29 @@ function validateConfig(c: Config): void {
       }. Got ${c.COUNTER_STYLE}`,
     );
   }
+  if (c.MINIMUM_IMAGE_DIGITS < 1) {
+    throw new Error(
+      `Invalid MINIMUM_IMAGE_DIGITS - Must be greater than 0.  Got ${c.MINIMUM_IMAGE_DIGITS}`,
+    );
+  }
 }
 
 export function getConfig(): Config {
   const c = {
-    PORT: parseInt(Deno.env.get("PORT") ?? "8080", 10),
+    PORT: parseInt(Deno.env.get("PORT") ?? "8000", 10),
     COUNTER_STYLE: Deno.env.get("COUNTER_STYLE") ?? "blue_digital_small",
     DEV_MODE: Deno.env.get("DEV_MODE") === "ENABLED",
     SITE_DOMAIN: Deno.env.get("SITE_DOMAIN") ?? "",
     REQUIRE_SITE_DOMAIN: Deno.env.get("SITE_DOMAIN") === "ENABLED",
-    DATA_DIR: Deno.env.get("DATA_DIR") ?? "./data",
+    // We explicitly check for a blank DATA_DIR wherever it is used and will
+    // create a temporary directory if necessary.
+    DATA_DIR: Deno.env.get("DATA_DIR") ?? "",
     IP_HEADER: Deno.env.get("IP_HEADER") ?? "x-forwarded-for",
     MAX_IP_TRACKING: parseInt(Deno.env.get("MAX_IP_TRACKING") ?? "10000", 10),
+    MINIMUM_IMAGE_DIGITS: parseInt(
+      Deno.env.get("MINIMUM_IMAGE_DIGITS") ?? "10",
+      10,
+    ),
   };
 
   if (!isConfig(c)) {

@@ -1,5 +1,6 @@
 import { packNumbersToArrayBuffer } from "@/util/array-buffer.ts";
 import { createCounterImage } from "./image.ts";
+import { Buffer } from "node:buffer";
 
 interface DedicatedWorkerGlobalScope {
   onmessage: (e: MessageEvent) => void;
@@ -24,6 +25,7 @@ export interface ConfigureCounterImageEvent extends CounterImageEvent {
   data: {
     event: "configure";
     style: string;
+    minDigits: number;
   };
 }
 
@@ -52,17 +54,29 @@ function isConfigureCounterImageEvent(
     (obj as ConfigureCounterImageEvent).data !== null &&
     typeof (obj as ConfigureCounterImageEvent).data.event === "string" &&
     (obj as ConfigureCounterImageEvent).data.event === "configure" &&
-    typeof (obj as ConfigureCounterImageEvent).data.style === "string"
+    typeof (obj as ConfigureCounterImageEvent).data.style === "string" &&
+    typeof (obj as ConfigureCounterImageEvent).data.minDigits === "number"
   );
 }
 
 let counterStyle: string;
+let minDigits: number;
+let fallbackImageArrayBuffer: ArrayBufferLike;
 
 (self as unknown as DedicatedWorkerGlobalScope).onmessage = async (
   e: MessageEvent<CounterImageEvent>,
 ) => {
   if (isConfigureCounterImageEvent(e)) {
     counterStyle = e.data.style;
+    minDigits = e.data.minDigits;
+    try {
+      fallbackImageArrayBuffer =
+        (await createCounterImage(0, counterStyle, minDigits)).buffer;
+    } catch (error) {
+      console.error(
+        `CounterImageWorker - Failed to generate fallback image: ${error}`,
+      );
+    }
     return;
   }
 
@@ -71,16 +85,34 @@ let counterStyle: string;
       if (counterStyle === undefined) {
         throw new Error(`Worker has not been configured with a counter style.`);
       }
+      if (minDigits === undefined) {
+        throw new Error(
+          `Worker has not been configured with a minimum digit count.`,
+        );
+      }
       const arrayBuffer = (await createCounterImage(
         e.data.number,
         counterStyle,
+        minDigits,
       )).buffer;
       (self as unknown as DedicatedWorkerGlobalScope).postMessage(
         packNumbersToArrayBuffer(e.data.id, e.data.number, arrayBuffer),
       );
       return;
     } catch (error) {
-      return console.error(`CounterImageWorkerOptimized Error: ${error}`);
+      console.error(
+        `CounterImageWorker - Failed to generate image: ${error}`,
+      );
+      if (fallbackImageArrayBuffer !== undefined) {
+        (self as unknown as DedicatedWorkerGlobalScope).postMessage(
+          packNumbersToArrayBuffer(
+            e.data.id,
+            e.data.number,
+            fallbackImageArrayBuffer,
+          ),
+        );
+      }
+      return;
     }
   }
 

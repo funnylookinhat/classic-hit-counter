@@ -3,6 +3,7 @@ import { getConnInfo } from "hono/deno";
 import { guess as guessUserAgent } from "@wundero/uap-ts";
 import { getConfig } from "@/util/config.ts";
 import TTLCache from "@isaacs/ttlcache";
+import { join } from "@std/path/join";
 
 const config = getConfig();
 
@@ -37,23 +38,30 @@ export interface VisitTotals {
 
 export type PageIndexes = Record<string, number>;
 
+let { DATA_DIR } = config;
+if (DATA_DIR.length === 0) {
+  DATA_DIR = await Deno.makeTempDir();
+  console.warn(`Warning - no DATA_DIR provided.  Using a temporary directory.`);
+  console.warn(`Storing site visit data in ${DATA_DIR}`);
+}
+
 /**
  * Load the visit totals from disk or init a new object.
  * @returns Visit totals
  */
 async function loadVisitTotals(): Promise<VisitTotals> {
   try {
-    const visitTotals: VisitTotals = JSON.parse(
+    const v: VisitTotals = JSON.parse(
       new TextDecoder().decode(
         await Deno.readFile(
-          await (`${config.DATA_DIR}/site-visit-totals.json`),
+          join(DATA_DIR, "site-visit-totals.json"),
         ),
       ),
     );
-    return visitTotals;
+    return v;
   } catch (error) {
     if (error instanceof Deno.errors.NotFound) {
-      const visitTotals: VisitTotals = {
+      const v: VisitTotals = {
         siteHits: 0,
         siteVisits: 0,
         pageVisits: {},
@@ -64,24 +72,36 @@ async function loadVisitTotals(): Promise<VisitTotals> {
           osDevice: {},
         },
       };
-      return visitTotals;
+      await saveVisitTotals(v);
+      return v;
     }
     throw error;
   }
 }
 
+const visitTotals = await loadVisitTotals();
+
 /**
  * Save the visit totals to file so that it can be referenced on restart.
  */
-async function saveVisitTotals(): Promise<void> {
-  await Deno.mkdir(config.DATA_DIR, { recursive: true });
-  await Deno.writeTextFile(
-    `${config.DATA_DIR}/site-visit-totals.json`,
-    JSON.stringify(visitTotals),
-  );
+async function saveVisitTotals(v: VisitTotals): Promise<void> {
+  try {
+    await Deno.mkdir(DATA_DIR, { recursive: true });
+    await Deno.writeTextFile(
+      join(DATA_DIR, "site-visit-totals.json"),
+      JSON.stringify(v),
+    );
+  } catch (error) {
+    if (error instanceof Deno.errors.PermissionDenied) {
+      console.error(
+        `Cannot save file ${
+          join(DATA_DIR, "site-visit-totals.json")
+        }: PermissionDenied.  Check that the directory is writeable by the process.`,
+      );
+    }
+    throw error;
+  }
 }
-
-const visitTotals = await loadVisitTotals();
 
 /**
  * Load the page index data from file, or init a new page index.
@@ -94,7 +114,7 @@ async function loadPageIndexFromFile(): Promise<
     const pageIndexes: PageIndexes = JSON.parse(
       new TextDecoder().decode(
         await Deno.readFile(
-          await (`${config.DATA_DIR}/page-indexes.json`),
+          join(DATA_DIR, "page-indexes.json"),
         ),
       ),
     );
@@ -102,11 +122,12 @@ async function loadPageIndexFromFile(): Promise<
     return { pageIndexes, nextPageIndex };
   } catch (error) {
     if (error instanceof Deno.errors.NotFound) {
-      const pageIndexes: PageIndexes = {
+      const p: PageIndexes = {
         "unknown": 0,
         "/": 1,
       };
-      return { pageIndexes, nextPageIndex: 2 };
+      await savePageIndexes(p);
+      return { pageIndexes: p, nextPageIndex: 2 };
     }
     throw error;
   }
@@ -115,12 +136,23 @@ async function loadPageIndexFromFile(): Promise<
 /**
  * Save the page index data to a file so that it can be referenced on restart.
  */
-async function savePageIndexes(): Promise<void> {
-  await Deno.mkdir(config.DATA_DIR, { recursive: true });
-  await Deno.writeTextFile(
-    `${config.DATA_DIR}/page-indexes.json`,
-    JSON.stringify(pageIndexes),
-  );
+async function savePageIndexes(p: PageIndexes): Promise<void> {
+  try {
+    await Deno.mkdir(DATA_DIR, { recursive: true });
+    await Deno.writeTextFile(
+      join(DATA_DIR, "page-indexes.json"),
+      JSON.stringify(p),
+    );
+  } catch (error) {
+    if (error instanceof Deno.errors.PermissionDenied) {
+      console.error(
+        `Cannot save file ${
+          join(DATA_DIR, "page-indexes.json")
+        }: PermissionDenied.  Check that the directory is writeable by the process.`,
+      );
+    }
+    throw error;
+  }
 }
 
 const pageIndexData = await loadPageIndexFromFile();
@@ -129,7 +161,7 @@ let nextPageIndex = pageIndexData.nextPageIndex;
 
 setInterval(async function () {
   try {
-    await saveVisitTotals();
+    await saveVisitTotals(visitTotals);
   } catch (error) {
     console.error(`Could not write site visit totals: ${error}`);
   }
@@ -194,7 +226,7 @@ function getRequestPage(c: Context): string {
 function getPageIndex(page: string): number {
   if (pageIndexes[page] === undefined) {
     pageIndexes[page] = nextPageIndex++;
-    savePageIndexes();
+    savePageIndexes(pageIndexes);
   }
   return pageIndexes[page];
 }

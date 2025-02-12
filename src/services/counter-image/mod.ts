@@ -26,6 +26,7 @@ function configureWorker(style: string): void {
     data: {
       event: "configure",
       style,
+      minDigits: config.MINIMUM_IMAGE_DIGITS,
     },
   };
 
