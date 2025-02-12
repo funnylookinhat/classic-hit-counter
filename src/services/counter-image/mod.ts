@@ -12,6 +12,8 @@ import {
 } from "@/util/hoisted-promise.ts";
 import { getConfig } from "@/util/config.ts";
 
+// TODO - Add a simple worker pool.
+
 const config = getConfig();
 
 const workerUrl = new URL("./worker/mod.ts", import.meta.url).href;
