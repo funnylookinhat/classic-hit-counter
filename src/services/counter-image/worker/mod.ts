@@ -25,6 +25,7 @@ export interface ConfigureCounterImageEvent extends CounterImageEvent {
   data: {
     event: "configure";
     style: string;
+    minDigits: number;
   };
 }
 
@@ -53,11 +54,13 @@ function isConfigureCounterImageEvent(
     (obj as ConfigureCounterImageEvent).data !== null &&
     typeof (obj as ConfigureCounterImageEvent).data.event === "string" &&
     (obj as ConfigureCounterImageEvent).data.event === "configure" &&
-    typeof (obj as ConfigureCounterImageEvent).data.style === "string"
+    typeof (obj as ConfigureCounterImageEvent).data.style === "string" &&
+    typeof (obj as ConfigureCounterImageEvent).data.minDigits === "number"
   );
 }
 
 let counterStyle: string;
+let minDigits: number;
 let fallbackImageArrayBuffer: ArrayBufferLike;
 
 (self as unknown as DedicatedWorkerGlobalScope).onmessage = async (
@@ -65,9 +68,10 @@ let fallbackImageArrayBuffer: ArrayBufferLike;
 ) => {
   if (isConfigureCounterImageEvent(e)) {
     counterStyle = e.data.style;
+    minDigits = e.data.minDigits;
     try {
       fallbackImageArrayBuffer =
-        (await createCounterImage(0, counterStyle)).buffer;
+        (await createCounterImage(0, counterStyle, minDigits)).buffer;
     } catch (error) {
       console.error(
         `CounterImageWorker - Failed to generate fallback image: ${error}`,
@@ -81,9 +85,15 @@ let fallbackImageArrayBuffer: ArrayBufferLike;
       if (counterStyle === undefined) {
         throw new Error(`Worker has not been configured with a counter style.`);
       }
+      if (minDigits === undefined) {
+        throw new Error(
+          `Worker has not been configured with a minimum digit count.`,
+        );
+      }
       const arrayBuffer = (await createCounterImage(
         e.data.number,
         counterStyle,
+        minDigits,
       )).buffer;
       (self as unknown as DedicatedWorkerGlobalScope).postMessage(
         packNumbersToArrayBuffer(e.data.id, e.data.number, arrayBuffer),

@@ -1,7 +1,7 @@
 {
   "tasks": {
-    "dev-server": "DEV_MODE=ENABLED deno run --watch --allow-env --allow-read --allow-write --allow-ffi --allow-net src/cmd/server.ts",
-    "server": "deno run --allow-env --allow-read --allow-ffi --allow-net src/cmd/server.ts"
+    "dev-server": "DEV_MODE=ENABLED DATA_DIR=./data deno run --watch --allow-env --allow-read --allow-write --allow-ffi --allow-net src/cmd/server.ts",
+    "server": "deno run --allow-env --allow-read --allow-write --allow-ffi --allow-net src/cmd/server.ts"
   },
   "imports": {
     "@/": "./src/",

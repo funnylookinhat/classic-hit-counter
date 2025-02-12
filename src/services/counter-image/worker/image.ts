@@ -142,8 +142,8 @@ export async function createCounterImage(
     .split("")
     .map((digit: string) => counterStyle.images[`${(digit as ImageKey)}`]);
 
-  const totalWidth = padding * 2 + minDigits * digitWidth +
-    (minDigits - 1) * spacing;
+  const totalWidth = padding * 2 + digits.length * digitWidth +
+    (digits.length - 1) * spacing;
   const totalHeight = padding * 2 + digitHeight;
 
   // Load and position each digit image
