@@ -13,6 +13,17 @@ const app = new Hono();
 app.use(compress());
 
 if (config.DEV_MODE) {
+  app.use(async (c, next) => {
+    console.log(
+      `Server.request: [${c.req.method}] ${c.req.url} - ${
+        JSON.stringify(c.req.header())
+      }`,
+    );
+    await next();
+  });
+}
+
+if (config.DEV_MODE) {
   app.use("/html/*", serveStatic({ root: getPathToFile("assets/") }));
 }
 
@@ -39,8 +50,6 @@ app.get("/page-count.png", async (c) => {
     "Content-Type": "image/png",
   });
 });
-
-// TODO - Consider a /page-count.png
 
 app.get("/stats.json", async (c) => {
   return c.json(getVisitTotals(), 200);
