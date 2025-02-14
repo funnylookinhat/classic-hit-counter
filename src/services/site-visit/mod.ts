@@ -268,11 +268,16 @@ export function handleRequest(c: Context): Visit {
 
   let ipPageVisit = pageVisitIpCache.get(ip);
 
-  console.log(
-    `SiteVisit.handleRequest: page=${page} pageIndex=${pageIndex} ipPagevisit=${
-      JSON.stringify(ipPageVisit)
-    } browserType=${browserType} browser=${browser} deviceType=${deviceType} osDevice=${osDevice}`,
-  );
+  if (config.DEV_MODE) {
+    console.log(
+      `SiteVisit.handleRequest: page=${page}
+      pageIndex=${pageIndex}
+      browserType=${browserType}
+      browser=${browser} deviceType=${deviceType} osDevice=${osDevice} ipPagevisit=${
+        JSON.stringify(ipPageVisit)
+      }`,
+    );
+  }
 
   // We only want to record site and page visits if there is a referer - e.g.
   // the image was loaded from a page.  Otherwise, we'll only increment hit
