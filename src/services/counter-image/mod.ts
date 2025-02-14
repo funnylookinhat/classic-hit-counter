@@ -12,18 +12,17 @@ import {
 } from "@/util/hoisted-promise.ts";
 import { getConfig } from "@/util/config.ts";
 
-// TODO - Add a simple worker pool.
-
 const config = getConfig();
 
 const workerUrl = new URL("./worker/mod.ts", import.meta.url).href;
-const numberImageWorker = new Worker(workerUrl, {
-  type: "module",
-});
+
+const WORKER_POOL_SIZE = config.IMAGE_WORKERS;
+
+const workerPool: Worker[] = [];
 
 const pendingWorkerPromises: Record<number, HoistedPromise<Uint8Array>> = {};
 
-function configureWorker(style: string): void {
+function configureWorkers(style: string): void {
   const configureCounterImageEvent: ConfigureCounterImageEvent = {
     data: {
       event: "configure",
@@ -32,10 +31,10 @@ function configureWorker(style: string): void {
     },
   };
 
-  numberImageWorker.postMessage(configureCounterImageEvent.data);
+  workerPool.map((worker) => {
+    worker.postMessage(configureCounterImageEvent.data);
+  });
 }
-
-configureWorker(config.COUNTER_STYLE);
 
 function getRandomNumber(max: number = Number.MAX_SAFE_INTEGER): number {
   return Math.floor(Math.random() * max) + 1;
@@ -53,12 +52,15 @@ function generateCounterImage(number: number): Promise<Uint8Array> {
     },
   };
 
-  numberImageWorker.postMessage(createCounterImageEvent.data);
+  const worker = workerPool[nextWorkerIndex];
+  nextWorkerIndex = (nextWorkerIndex + 1) % WORKER_POOL_SIZE;
+
+  worker.postMessage(createCounterImageEvent.data);
 
   return pendingWorkerPromises[id].promise;
 }
 
-numberImageWorker.onmessage = (e) => {
+function onWorkerMessage(e) {
   if (!isArrayBuffer(e.data)) {
     console.error(
       `Unexpected callback from worker: ${JSON.stringify(e).substring(0, 100)}`,
@@ -80,7 +82,20 @@ numberImageWorker.onmessage = (e) => {
   );
 
   delete pendingWorkerPromises[id];
-};
+}
+
+if (config.DEV_MODE) {
+  console.log(`Loading ${WORKER_POOL_SIZE} image workers.`);
+}
+for (let i = 0; i < WORKER_POOL_SIZE; i++) {
+  const w = new Worker(workerUrl, { type: "module" });
+  w.onmessage = onWorkerMessage;
+  workerPool.push(w);
+}
+
+configureWorkers(config.COUNTER_STYLE);
+
+let nextWorkerIndex = 0;
 
 export function getCounterImage(number: number): Promise<Uint8Array> {
   if (!Number.isInteger(number)) {

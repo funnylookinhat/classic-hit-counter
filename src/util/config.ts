@@ -11,6 +11,7 @@ export interface Config {
   IP_HEADER: string;
   MAX_IP_TRACKING: number;
   MINIMUM_IMAGE_DIGITS: number;
+  IMAGE_WORKERS: number;
 }
 
 const COUNTER_STYLE_OPTIONS = ["blue_digital_small", "blue_digital_large"];
@@ -26,6 +27,7 @@ function isConfig(obj: unknown): obj is Config {
     (obj as Config).PORT <= 65535 &&
     typeof (obj as Config).MAX_IP_TRACKING === "number" &&
     typeof (obj as Config).MINIMUM_IMAGE_DIGITS === "number" &&
+    typeof (obj as Config).IMAGE_WORKERS === "number" &&
     typeof (obj as Config).COUNTER_STYLE === "string" &&
     typeof (obj as Config).DATA_DIR === "string" &&
     typeof (obj as Config).SITE_DOMAIN === "string" &&
@@ -39,7 +41,7 @@ function isConfig(obj: unknown): obj is Config {
  * @param c The Config to validate.
  */
 function validateConfig(c: Config): void {
-  if (c.PORT < 1 || c.PORT > 65535) {
+  if (Number.isNaN(c.PORT) || c.PORT < 1 || c.PORT > 65535) {
     throw new Error(
       `Invalid PORT - Must be between 1 and 65535. Got ${c.PORT}`,
     );
@@ -51,14 +53,19 @@ function validateConfig(c: Config): void {
       }. Got ${c.COUNTER_STYLE}`,
     );
   }
-  if (c.MINIMUM_IMAGE_DIGITS < 1) {
+  if (Number.isNaN(c.MINIMUM_IMAGE_DIGITS) || c.MINIMUM_IMAGE_DIGITS < 1) {
     throw new Error(
       `Invalid MINIMUM_IMAGE_DIGITS - Must be greater than 0.  Got ${c.MINIMUM_IMAGE_DIGITS}`,
     );
   }
+  if (Number.isNaN(c.IMAGE_WORKERS) || c.IMAGE_WORKERS < 1) {
+    throw new Error(
+      `Invalid IMAGE_WORKERS - Must be greater than 0.  Got ${c.IMAGE_WORKERS}`,
+    );
+  }
 }
 
-export function getConfig(): Config {
+function loadConfig(): Config {
   const c = {
     PORT: parseInt(Deno.env.get("PORT") ?? "8000", 10),
     COUNTER_STYLE: Deno.env.get("COUNTER_STYLE") ?? "blue_digital_small",
@@ -74,11 +81,24 @@ export function getConfig(): Config {
       Deno.env.get("MINIMUM_IMAGE_DIGITS") ?? "10",
       10,
     ),
+    IMAGE_WORKERS: parseInt(Deno.env.get("IMAGE_WORKERS") ?? "1", 10),
   };
 
   if (!isConfig(c)) {
     throw new Error("Invalid configuration.");
   }
 
+  validateConfig(c);
+
   return c;
+}
+
+const config = loadConfig();
+
+export function getConfig(): Config {
+  if (config === undefined) {
+    throw new Error("Config was never initialized.");
+  }
+
+  return config;
 }
