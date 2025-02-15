@@ -70,8 +70,8 @@ function loadConfig(): Config {
     PORT: parseInt(Deno.env.get("PORT") ?? "8000", 10),
     COUNTER_STYLE: Deno.env.get("COUNTER_STYLE") ?? "blue_digital_small",
     DEV_MODE: Deno.env.get("DEV_MODE") === "ENABLED",
-    SITE_DOMAIN: Deno.env.get("SITE_DOMAIN") ?? "",
-    REQUIRE_SITE_DOMAIN: Deno.env.get("SITE_DOMAIN") === "ENABLED",
+    SITE_DOMAIN: Deno.env.get("SITE_DOMAIN") ?? "localhost",
+    REQUIRE_SITE_DOMAIN: Deno.env.get("REQUIRE_SITE_DOMAIN") === "ENABLED",
     // We explicitly check for a blank DATA_DIR wherever it is used and will
     // create a temporary directory if necessary.
     DATA_DIR: Deno.env.get("DATA_DIR") ?? "",
