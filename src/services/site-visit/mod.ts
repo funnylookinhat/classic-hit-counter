@@ -188,32 +188,52 @@ function getUrlPath(url: string): string {
 }
 
 /**
+ * Determine if a hit should be recorded.  This checks if REQUIRE_SITE_DOMAIN
+ * and SITE_DOMAIN are configured, and if so will require that the referer
+ * header include the site domain.
+ * @param c Request context
+ * @returns boolean
+ */
+function getShouldRecordHit(c: Context): boolean {
+  const headerReferer = c.req.header("referer");
+
+  const REQUIRE_SITE_DOMAIN = config.SITE_DOMAIN?.length > 0 &&
+    config.REQUIRE_SITE_DOMAIN;
+
+  if (REQUIRE_SITE_DOMAIN) {
+    // Referer header MUST include site - or else we return unknown.
+    if (
+      headerReferer === undefined || !headerReferer.includes(config.SITE_DOMAIN)
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
  * Returns the "page" from the provided referer by stripping out site.
  * If a referer is present, it will always return a value with a leading slash.
  * If no referer is present, will return "unknown"
  *
  * @param c Request context
- * @returns The parsed page.  "unknown" if no referer is present.
+ * @returns The parsed page.  "unknown" if no referer is present, undefined if
+ * no valid referer was present and was required.
  */
 function getRequestPage(c: Context): string {
-  const referer = c.req.header("referer");
+  const headerReferer = c.req.header("referer");
+  // If we determine that a referer should be returned, and this one is defined,
+  // we will return it instead.
+  const queryReferer = c.req.query("page");
+
+  const referer = queryReferer ?? headerReferer;
 
   if (!referer) {
     return "unknown";
   }
-  if (!config.SITE_DOMAIN || !config.SITE_DOMAIN.length) {
-    return getUrlPath(referer);
-  }
-  const i = referer.indexOf(config.SITE_DOMAIN);
-  if (i === -1) {
-    if (config.REQUIRE_SITE_DOMAIN) {
-      return "unknown";
-    }
-    return referer.startsWith("/") ? referer : "/" + referer;
-  }
-  const page = referer.substring(i + config.SITE_DOMAIN.length);
 
-  return page.startsWith("/") ? page : `/${page}`;
+  return getUrlPath(referer);
 }
 
 /**
@@ -256,6 +276,7 @@ const pageVisitIpCache = new TTLCache<string, number[]>({
 export function handleRequest(c: Context): Visit {
   const ip = getRequestIp(c);
 
+  const shouldRecordHit = getShouldRecordHit(c);
   const page = getRequestPage(c);
   const pageIndex = getPageIndex(page);
 
@@ -270,21 +291,25 @@ export function handleRequest(c: Context): Visit {
 
   if (config.DEV_MODE) {
     console.log(
-      `SiteVisit.handleRequest: page=${page}
+      `
+      SiteVisit.handleRequest: page=${page}
+      shouldRecordHit=${shouldRecordHit}
       pageIndex=${pageIndex}
       browserType=${browserType}
-      browser=${browser} deviceType=${deviceType} osDevice=${osDevice} ipPagevisit=${
-        JSON.stringify(ipPageVisit)
-      }`,
+      browser=${browser}
+      deviceType=${deviceType}
+      osDevice=${osDevice}
+      ipPagevisit=${JSON.stringify(ipPageVisit)}
+    `.replace(/\s+/g, " ").trimStart(),
     );
   }
 
   // We only want to record site and page visits if there is a referer - e.g.
   // the image was loaded from a page.  Otherwise, we'll only increment hit
   // counter.
-  const recordSiteVisit = page !== "unknown" &&
+  const recordSiteVisit = shouldRecordHit && page !== "unknown" &&
     ipPageVisit === undefined;
-  const recordPageVisit = page !== "unknown" &&
+  const recordPageVisit = shouldRecordHit && page !== "unknown" &&
     (ipPageVisit === undefined || !ipPageVisit.includes(pageIndex));
 
   if (recordPageVisit) {
@@ -301,8 +326,9 @@ export function handleRequest(c: Context): Visit {
   // maintain than a long set of if/else statement.
   // A generic helper method would be a neat idea to refactor with.
 
-  // Hits always increment
-  const siteHit = ++visitTotals.siteHits;
+  const siteHit = shouldRecordHit
+    ? ++visitTotals.siteHits
+    : visitTotals.siteHits;
   // Site visits will increment once per IP per 24 hours
   const siteVisit = recordSiteVisit
     ? ++visitTotals.siteVisits
