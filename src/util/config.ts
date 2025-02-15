@@ -14,7 +14,12 @@ export interface Config {
   IMAGE_WORKERS: number;
 }
 
-const COUNTER_STYLE_OPTIONS = ["blue_digital_small", "blue_digital_large"];
+const COUNTER_STYLE_OPTIONS = [
+  "blue_digital_small",
+  "blue_digital_large",
+  "analog_small",
+  "analog_large",
+];
 
 function isConfig(obj: unknown): obj is Config {
   return (
