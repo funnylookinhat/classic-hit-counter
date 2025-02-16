@@ -15,12 +15,12 @@ jobs:
       id-token: write # To push to GHCR
 
     steps:
-      - name: Get latest release
-        id: get-latest-release
-        uses: actions-ecosystem/action-get-latest-release@v1
+      - id: get-latest-release
+        uses: pozetroninc/github-action-get-latest-release@v0.8.0
         with:
           owner: ${{ github.repository_owner }}
           repo: ${{ github.event.repository.name }}
+          excludes: prerelease, draft
 
       - uses: actions/checkout@v4
         with:
@@ -33,9 +33,9 @@ jobs:
       - name: Build Docker image
         run: |
           docker build \
-            -t ghcr.io/${{ github.repository }}:${{ steps.get-latest-release.outputs.tag_name }} \
+            -t ghcr.io/${{ github.repository }}:${{ steps.get-latest-release.outputs.release }} \
             .
 
       - name: Push Docker image
         run: |
-          docker push ghcr.io/${{ github.repository }}:${{ steps.get-latest-release.outputs.tag_name }}
+          docker push ghcr.io/${{ github.repository }}:${{ steps.get-latest-release.outputs.release }}
