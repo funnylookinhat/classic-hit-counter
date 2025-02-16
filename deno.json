@@ -11,13 +11,13 @@
     "@isaacs/ttlcache": "npm:@isaacs/ttlcache@^1.4.1",
     "@std/path": "jsr:@std/path@^1.0.8",
     "@std/assert": "jsr:@std/assert@1",
+    "@std/semver": "jsr:@std/semver@^1.0.4",
     "@wundero/uap-ts": "jsr:@wundero/uap-ts@^1.0.3",
     "hono": "npm:hono@^4.6.18",
     "sharp": "npm:sharp@^0.33.5",
     "@octokit/rest": "npm:@octokit/rest@^21.1.1",
     "@std/cli": "jsr:@std/cli@^1.0.13",
     "@std/log": "jsr:@std/log@^0.224.14",
-    "@std/semver": "jsr:@std/semver@^1.0.4",
     "conventional-changelog": "npm:conventional-changelog@^6.0.0"
   }
 }
