@@ -1,10 +1,9 @@
 import { packNumbersToArrayBuffer } from "@/util/array-buffer.ts";
 import { createCounterImage } from "./image.ts";
-import { Buffer } from "node:buffer";
 
 interface DedicatedWorkerGlobalScope {
   onmessage: (e: MessageEvent) => void;
-  postMessage: (message: any) => void;
+  postMessage: (message: unknown) => void;
 }
 
 interface CounterImageEvent {
