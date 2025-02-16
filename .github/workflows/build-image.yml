@@ -1,0 +1,41 @@
+name: Build Docker Image
+
+on:
+  workflow_run:
+    workflows: ["Generate Release on Merge"]
+    types: [completed]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    # Only publish if generate release was successful.
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    permissions:
+      contents: read
+      id-token: write # To push to GHCR
+
+    steps:
+      - name: Get latest release
+        id: get-latest-release
+        uses: actions-ecosystem/action-get-latest-release@v1
+        with:
+          owner: ${{ github.repository_owner }}
+          repo: ${{ github.event.repository.name }}
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.get-latest-release.outputs.tag_name }}
+
+      - name: Log in to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t ghcr.io/${{ github.repository }}:${{ steps.get-latest-release.outputs.tag_name }} \
+            .
+
+      - name: Push Docker image
+        run: |
+          docker push ghcr.io/${{ github.repository }}:${{ steps.get-latest-release.outputs.tag_name }}

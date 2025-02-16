@@ -54,7 +54,7 @@ app.get("/page-count.png", async (c) => {
   });
 });
 
-app.get("/stats.json", async (c) => {
+app.get("/stats.json", (c) => {
   return c.json(getVisitTotals(), 200, {
     "Cache-Control": "private, no-cache",
   });
