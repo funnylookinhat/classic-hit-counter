@@ -3,6 +3,7 @@
   "tasks": {
     "dev-server": "DEV_MODE=ENABLED DATA_DIR=./data deno run --watch --allow-env --allow-read --allow-write --allow-ffi --allow-net src/cmd/server.ts",
     "server": "deno run --allow-env --allow-read --allow-write --allow-ffi --allow-net src/cmd/server.ts",
+    "generate-release": "deno run --allow-all scripts/generate-release.ts",
     "test": "deno test"
   },
   "imports": {
