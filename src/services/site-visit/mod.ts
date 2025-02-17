@@ -4,6 +4,7 @@ import { guess as guessUserAgent } from "@wundero/uap-ts";
 import { getConfig } from "@/util/config.ts";
 import TTLCache from "@isaacs/ttlcache";
 import { join } from "@std/path/join";
+import { getCounterImage } from "@/services/counter-image/mod.ts";
 
 const config = getConfig();
 
@@ -380,7 +381,7 @@ export function handleRequest(c: Context): Visit {
       ? visitTotals.userAgentVisits.osDevice[osDevice]
       : 0);
 
-  const siteVisitData: Visit = {
+  const visit: Visit = {
     siteHit,
     siteVisit,
     page,
@@ -397,9 +398,98 @@ export function handleRequest(c: Context): Visit {
     },
   };
 
-  return siteVisitData;
+  return visit;
 }
 
 export function getVisitTotals(): VisitTotals {
   return visitTotals;
+}
+
+interface CachedImage {
+  n: number;
+  image: Uint8Array;
+}
+
+let siteCountCachedImage: CachedImage;
+let pageCountCachedImage: CachedImage;
+let hitCountCachedImage: CachedImage;
+
+const errorImage = await getCounterImage(0);
+
+export async function getSiteCountImage(c: Context): Promise<Uint8Array> {
+  try {
+    const visit = handleRequest(c);
+
+    if (
+      siteCountCachedImage !== undefined &&
+      visit.siteVisit === siteCountCachedImage.n
+    ) {
+      return siteCountCachedImage.image;
+    }
+
+    const imageData = await getCounterImage(visit.siteVisit);
+
+    siteCountCachedImage = {
+      n: visit.siteVisit,
+      image: imageData,
+    };
+
+    return imageData;
+  } catch (error) {
+    console.error(`getSiteCountImage errored`, error);
+  }
+
+  return errorImage;
+}
+
+export async function getPageCountImage(c: Context): Promise<Uint8Array> {
+  try {
+    const visit = handleRequest(c);
+
+    if (
+      pageCountCachedImage !== undefined &&
+      visit.pageVisit === pageCountCachedImage.n
+    ) {
+      return pageCountCachedImage.image;
+    }
+
+    const imageData = await getCounterImage(visit.pageVisit);
+
+    pageCountCachedImage = {
+      n: visit.pageVisit,
+      image: imageData,
+    };
+
+    return imageData;
+  } catch (error) {
+    console.error(`getPageCountImage errored`, error);
+  }
+
+  return errorImage;
+}
+
+export async function getHitCountImage(c: Context): Promise<Uint8Array> {
+  try {
+    const visit = handleRequest(c);
+
+    if (
+      hitCountCachedImage !== undefined &&
+      visit.siteHit === hitCountCachedImage.n
+    ) {
+      return hitCountCachedImage.image;
+    }
+
+    const imageData = await getCounterImage(visit.siteHit);
+
+    hitCountCachedImage = {
+      n: visit.pageVisit,
+      image: imageData,
+    };
+
+    return imageData;
+  } catch (error) {
+    console.error(`getHitCountImage errored`, error);
+  }
+
+  return errorImage;
 }
