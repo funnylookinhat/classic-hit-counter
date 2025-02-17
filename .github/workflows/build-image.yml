@@ -6,13 +6,13 @@ on:
     types: [completed]
 
 jobs:
-  publish:
+  build-and-push:
     runs-on: ubuntu-latest
     # Only publish if generate release was successful.
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: read
-      id-token: write # To push to GHCR
+      packages: write
 
     steps:
       - id: get-latest-release
