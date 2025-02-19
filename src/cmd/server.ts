@@ -38,14 +38,14 @@ app.get("/site-count.png", async (c) => {
   });
 });
 
-app.get("/hit-count.png", async (c) => {
+app.get("/page-count.png", async (c) => {
   return c.body(await getPageCountImage(c), 200, {
     "Content-Type": "image/png",
     "Cache-Control": "private, no-cache",
   });
 });
 
-app.get("/page-count.png", async (c) => {
+app.get("/hit-count.png", async (c) => {
   return c.body(await getHitCountImage(c), 200, {
     "Content-Type": "image/png",
     "Cache-Control": "private, no-cache",
