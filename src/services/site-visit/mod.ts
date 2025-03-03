@@ -5,6 +5,7 @@ import { getConfig } from "@/util/config.ts";
 import TTLCache from "@isaacs/ttlcache";
 import { join } from "@std/path/join";
 import { getCounterImage } from "@/services/counter-image/mod.ts";
+import { logger } from "../../util/logger.ts";
 
 const config = getConfig();
 
@@ -42,8 +43,13 @@ export type PageIndexes = Record<string, number>;
 let { DATA_DIR } = config;
 if (DATA_DIR.length === 0) {
   DATA_DIR = await Deno.makeTempDir();
-  console.warn(`Warning - no DATA_DIR provided.  Using a temporary directory.`);
-  console.warn(`Storing site visit data in ${DATA_DIR}`);
+  logger.warn(
+    "service.site-visit",
+    "No DATA_DIR provided!  Using a temporary directory.",
+    {
+      dataDir: DATA_DIR,
+    },
+  );
 }
 
 /**
@@ -94,10 +100,13 @@ async function saveVisitTotals(v: VisitTotals): Promise<void> {
     );
   } catch (error) {
     if (error instanceof Deno.errors.PermissionDenied) {
-      console.error(
-        `Cannot save file ${
-          join(DATA_DIR, "site-visit-totals.json")
-        }: PermissionDenied.  Check that the directory is writeable by the process.`,
+      logger.error(
+        "service.site-visit",
+        `Cannot save site-visit-totals.json. PermissionDenied. Check that the directory is writeable by the process.`,
+        {
+          error,
+          path: join(DATA_DIR, "site-visit-totals.json"),
+        },
       );
     }
     throw error;
@@ -146,10 +155,13 @@ async function savePageIndexes(p: PageIndexes): Promise<void> {
     );
   } catch (error) {
     if (error instanceof Deno.errors.PermissionDenied) {
-      console.error(
-        `Cannot save file ${
-          join(DATA_DIR, "page-indexes.json")
-        }: PermissionDenied.  Check that the directory is writeable by the process.`,
+      logger.error(
+        "service.site-visit",
+        `Cannot save page-indexes.json. PermissionDenied. Check that the directory is writeable by the process.`,
+        {
+          error,
+          path: join(DATA_DIR, "page-indexes.json"),
+        },
       );
     }
     throw error;
@@ -164,7 +176,9 @@ setInterval(async function () {
   try {
     await saveVisitTotals(visitTotals);
   } catch (error) {
-    console.error(`Could not write site visit totals: ${error}`);
+    logger.error("service.site-visit", `Could not write site visit totals`, {
+      error,
+    });
   }
 }, config.DEV_MODE ? 5 * 1000 : 60 * 1000);
 
@@ -218,8 +232,8 @@ function getShouldRecordHit(c: Context): boolean {
  * If a referer is present, it will always return a value with a leading slash.
  * If no referer is present, will return "unknown"
  *
- * @param c Request context
- * @returns The parsed page.  "unknown" if no referer is present, undefined if
+ * @param c - Request context
+ * @returns - The parsed page.  "unknown" if no referer is present, undefined if
  * no valid referer was present and was required.
  */
 function getRequestPage(c: Context): string {
@@ -238,11 +252,10 @@ function getRequestPage(c: Context): string {
 }
 
 /**
- * Hashes a given page so that it can be stored as a visited page in a cookie.
- * This depends on loadCookiePage() having been called already.
- * @param page The page to hash.
- * @returns {string} The hashed value to store in a cookie to represent a given
- * page.
+ * Determines if a given page has been seen before, if so - returns it's index.
+ * Otherwise, it adds it to the tracked list and returns it's index.
+ * @param page - The page to search for.
+ * @returns {number} - The page index.
  */
 function getPageIndex(page: string): number {
   if (pageIndexes[page] === undefined) {
@@ -274,7 +287,7 @@ const pageVisitIpCache = new TTLCache<string, number[]>({
   ttl: 1000 * 60 * 60 * 24,
 });
 
-export function handleRequest(c: Context): Visit {
+function handleRequest(c: Context): Visit {
   const ip = getRequestIp(c);
 
   const shouldRecordHit = getShouldRecordHit(c);
@@ -290,20 +303,20 @@ export function handleRequest(c: Context): Visit {
 
   let ipPageVisit = pageVisitIpCache.get(ip);
 
-  if (config.DEV_MODE) {
-    console.log(
-      `
-      SiteVisit.handleRequest: page=${page}
-      shouldRecordHit=${shouldRecordHit}
-      pageIndex=${pageIndex}
-      browserType=${browserType}
-      browser=${browser}
-      deviceType=${deviceType}
-      osDevice=${osDevice}
-      ipPagevisit=${JSON.stringify(ipPageVisit)}
-    `.replace(/\s+/g, " ").trimStart(),
-    );
-  }
+  logger.debug(
+    "service.site-visit",
+    "handleRequest",
+    {
+      page,
+      shouldRecordHit,
+      pageIndex,
+      browserType,
+      browser,
+      deviceType,
+      osDevice,
+      ipPageVisit,
+    },
+  );
 
   // We only want to record site and page visits if there is a referer - e.g.
   // the image was loaded from a page.  Otherwise, we'll only increment hit
@@ -401,10 +414,6 @@ export function handleRequest(c: Context): Visit {
   return visit;
 }
 
-export function getVisitTotals(): VisitTotals {
-  return visitTotals;
-}
-
 interface CachedImage {
   n: number;
   image: Uint8Array;
@@ -436,7 +445,7 @@ export async function getSiteCountImage(c: Context): Promise<Uint8Array> {
 
     return imageData;
   } catch (error) {
-    console.error(`getSiteCountImage errored`, error);
+    logger.error("service.site-visit", `getSiteCountImage errored`, { error });
   }
 
   return errorImage;
@@ -462,7 +471,7 @@ export async function getPageCountImage(c: Context): Promise<Uint8Array> {
 
     return imageData;
   } catch (error) {
-    console.error(`getPageCountImage errored`, error);
+    logger.error("service.site-visit", `getPageCountImage errored`, { error });
   }
 
   return errorImage;
@@ -488,8 +497,12 @@ export async function getHitCountImage(c: Context): Promise<Uint8Array> {
 
     return imageData;
   } catch (error) {
-    console.error(`getHitCountImage errored`, error);
+    logger.error("service.site-visit", `getHitCountImage errored`, { error });
   }
 
   return errorImage;
+}
+
+export function getVisitTotals(): VisitTotals {
+  return visitTotals;
 }

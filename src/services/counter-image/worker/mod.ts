@@ -1,5 +1,6 @@
 import { packNumbersToArrayBuffer } from "@/util/array-buffer.ts";
 import { createCounterImage } from "./image.ts";
+import { logger } from "../../../util/logger.ts";
 
 interface DedicatedWorkerGlobalScope {
   onmessage: (e: MessageEvent) => void;
@@ -72,8 +73,10 @@ let fallbackImageArrayBuffer: ArrayBufferLike;
       fallbackImageArrayBuffer =
         (await createCounterImage(0, counterStyle, minDigits)).buffer;
     } catch (error) {
-      console.error(
-        `CounterImageWorker - Failed to generate fallback image: ${error}`,
+      logger.error(
+        "service.counter-image.worker",
+        `Failed to generate fallback image.`,
+        { error },
       );
     }
     return;
@@ -99,8 +102,10 @@ let fallbackImageArrayBuffer: ArrayBufferLike;
       );
       return;
     } catch (error) {
-      console.error(
-        `CounterImageWorker - Failed to generate image: ${error}`,
+      logger.error(
+        "service.counter-image.worker",
+        `Failed to generate image.`,
+        { error },
       );
       if (fallbackImageArrayBuffer !== undefined) {
         (self as unknown as DedicatedWorkerGlobalScope).postMessage(
@@ -115,8 +120,12 @@ let fallbackImageArrayBuffer: ArrayBufferLike;
     }
   }
 
-  console.error(
-    `CounterImageWorker.onmessage: received unexpected message format`,
+  logger.error(
+    "service.counter-image.worker",
+    `received unexpected message format`,
+    {
+      event: e.data,
+    },
   );
   return;
 };

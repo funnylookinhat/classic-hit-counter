@@ -1,8 +1,11 @@
 {
   "version": "4",
   "specifiers": {
+    "jsr:@funnylookinhat/logosaurus@^1.2.1": "1.2.1",
     "jsr:@std/assert@1": "1.0.11",
+    "jsr:@std/fmt@^1.0.5": "1.0.5",
     "jsr:@std/internal@^1.0.5": "1.0.5",
+    "jsr:@std/io@~0.225.2": "0.225.2",
     "jsr:@std/path@^1.0.8": "1.0.8",
     "jsr:@std/semver@*": "1.0.4",
     "jsr:@std/semver@^1.0.4": "1.0.4",
@@ -13,14 +16,27 @@
     "npm:sharp@~0.33.5": "0.33.5"
   },
   "jsr": {
+    "@funnylookinhat/logosaurus@1.2.1": {
+      "integrity": "84c9a8833c97aa5e3e5312fbbe6a490d1b87a9e7e20fecd70fc5a00b76b13e96",
+      "dependencies": [
+        "jsr:@std/fmt",
+        "jsr:@std/io"
+      ]
+    },
     "@std/assert@1.0.11": {
       "integrity": "2461ef3c368fe88bc60e186e7744a93112f16fd110022e113a0849e94d1c83c1",
       "dependencies": [
         "jsr:@std/internal"
       ]
     },
+    "@std/fmt@1.0.5": {
+      "integrity": "0cfab43364bc36650d83c425cd6d99910fc20c4576631149f0f987eddede1a4d"
+    },
     "@std/internal@1.0.5": {
       "integrity": "54a546004f769c1ac9e025abd15a76b6671ddc9687e2313b67376125650dc7ba"
+    },
+    "@std/io@0.225.2": {
+      "integrity": "3c740cd4ee4c082e6cfc86458f47e2ab7cb353dc6234d5e9b1f91a2de5f4d6c7"
     },
     "@std/path@1.0.8": {
       "integrity": "548fa456bb6a04d3c1a1e7477986b6cffbce95102d0bb447c67c4ee70e0364be"
@@ -237,6 +253,7 @@
   },
   "workspace": {
     "dependencies": [
+      "jsr:@funnylookinhat/logosaurus@^1.2.1",
       "jsr:@std/assert@1",
       "jsr:@std/path@^1.0.8",
       "jsr:@std/semver@^1.0.4",

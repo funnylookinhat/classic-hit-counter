@@ -1,10 +1,13 @@
 // The configuration validation is a bit messy - mixed up between zod and a
 // type guard.  We're using envar to ensure that the shape of a value
 
+import { LOG_LEVELS } from "@funnylookinhat/logosaurus";
+
 export interface Config {
   PORT: number;
   COUNTER_STYLE: string;
   DEV_MODE: boolean;
+  LOG_LEVEL: string;
   SITE_DOMAIN: string;
   REQUIRE_SITE_DOMAIN: boolean;
   DATA_DIR: string;
@@ -36,7 +39,8 @@ function isConfig(obj: unknown): obj is Config {
     typeof (obj as Config).COUNTER_STYLE === "string" &&
     typeof (obj as Config).DATA_DIR === "string" &&
     typeof (obj as Config).SITE_DOMAIN === "string" &&
-    typeof (obj as Config).IP_HEADER === "string"
+    typeof (obj as Config).IP_HEADER === "string" &&
+    typeof (obj as Config).LOG_LEVEL === "string"
   );
 }
 
@@ -68,6 +72,11 @@ function validateConfig(c: Config): void {
       `Invalid IMAGE_WORKERS - Must be greater than 0.  Got ${c.IMAGE_WORKERS}`,
     );
   }
+  if (!LOG_LEVELS.includes(c.LOG_LEVEL)) {
+    throw new Error(
+      `Invalid LOG_LEVEL - Must be one of ${LOG_LEVELS.join(", ")}`,
+    );
+  }
 }
 
 function loadConfig(): Config {
@@ -87,6 +96,7 @@ function loadConfig(): Config {
       10,
     ),
     IMAGE_WORKERS: parseInt(Deno.env.get("IMAGE_WORKERS") ?? "1", 10),
+    LOG_LEVEL: Deno.env.get("LOG_LEVEL") ?? "info",
   };
 
   if (!isConfig(c)) {

@@ -16,26 +16,10 @@ Add a fancy visitor counter to your website - _now with analytics!_
 
 == TODO List
 
-* Consider cache control headers
-** 1 hour
-** Make configurable - because otherwise we want it to reload every time.
-* Document configuration
-* Release Workflow
-** Grab inspiration from this - https://github.com/wuespace/envar/blob/main/scripts/release.ts#L111-L115
-
-== Some things I've learned
-
-=== deno compile + node packages
-
-deno compile doesn't work if you're using node: package that require building
-an architecture specific binary.
-
-Sharp isn't pulled in correctly, so we're left with just deno run.
-
-=== files are read relative to the CWD
-
-Don't fight it - if you have a file in assets/foo/bar/baz.txt and you're in
-src/qux/blargle.ts - just read the file with `./assets/foo/bar/baz.txt`
-
-It's weird - but I suspect that this will help long term with compiling assets
-into binaries.
+* Update logging
+* Document
+** Configuration
+** Local Testing
+** Getting Stats
+** Docker Image
+* Tag 1.0.0
