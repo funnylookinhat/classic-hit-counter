@@ -1,7 +1,7 @@
 {
   "version": "0.6.1",
   "tasks": {
-    "dev-server": "DEV_MODE=ENABLED DATA_DIR=./data deno run --watch --allow-env --allow-read --allow-write --allow-ffi --allow-net src/cmd/server.ts",
+    "dev-server": "DEV_MODE=ENABLED LOG_LEVEL=debug DATA_DIR=./data deno run --watch --allow-env --allow-read --allow-write --allow-ffi --allow-net src/cmd/server.ts",
     "server": "deno run --allow-env --allow-read --allow-write --allow-ffi --allow-net src/cmd/server.ts",
     "generate-release": "deno run --allow-all scripts/generate-release.ts",
     "test": "deno test"
@@ -15,9 +15,5 @@
     "@wundero/uap-ts": "jsr:@wundero/uap-ts@^1.0.3",
     "hono": "npm:hono@^4.6.18",
     "sharp": "npm:sharp@^0.33.5",
-    "@octokit/rest": "npm:@octokit/rest@^21.1.1",
-    "@std/cli": "jsr:@std/cli@^1.0.13",
-    "@std/log": "jsr:@std/log@^0.224.14",
-    "conventional-changelog": "npm:conventional-changelog@^6.0.0"
   }
 }
