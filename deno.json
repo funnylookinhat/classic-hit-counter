@@ -1,23 +1,20 @@
 {
   "version": "0.6.1",
   "tasks": {
-    "dev-server": "DEV_MODE=ENABLED DATA_DIR=./data deno run --watch --allow-env --allow-read --allow-write --allow-ffi --allow-net src/cmd/server.ts",
+    "dev-server": "DEV_MODE=ENABLED LOG_LEVEL=debug DATA_DIR=./data deno run --watch --allow-env --allow-read --allow-write --allow-ffi --allow-net src/cmd/server.ts",
     "server": "deno run --allow-env --allow-read --allow-write --allow-ffi --allow-net src/cmd/server.ts",
     "generate-release": "deno run --allow-all scripts/generate-release.ts",
     "test": "deno test"
   },
   "imports": {
     "@/": "./src/",
+    "@funnylookinhat/logosaurus": "jsr:@funnylookinhat/logosaurus@^1.2.1",
     "@isaacs/ttlcache": "npm:@isaacs/ttlcache@^1.4.1",
     "@std/path": "jsr:@std/path@^1.0.8",
     "@std/assert": "jsr:@std/assert@1",
     "@std/semver": "jsr:@std/semver@^1.0.4",
     "@wundero/uap-ts": "jsr:@wundero/uap-ts@^1.0.3",
     "hono": "npm:hono@^4.6.18",
-    "sharp": "npm:sharp@^0.33.5",
-    "@octokit/rest": "npm:@octokit/rest@^21.1.1",
-    "@std/cli": "jsr:@std/cli@^1.0.13",
-    "@std/log": "jsr:@std/log@^0.224.14",
-    "conventional-changelog": "npm:conventional-changelog@^6.0.0"
+    "sharp": "npm:sharp@^0.33.5"
   }
 }

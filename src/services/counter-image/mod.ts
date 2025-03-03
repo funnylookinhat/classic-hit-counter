@@ -11,6 +11,7 @@ import {
   type HoistedPromise,
 } from "@/util/hoisted-promise.ts";
 import { getConfig } from "@/util/config.ts";
+import { logger } from "../../util/logger.ts";
 
 const config = getConfig();
 
@@ -62,8 +63,12 @@ function generateCounterImage(number: number): Promise<Uint8Array> {
 
 function onWorkerMessage(e) {
   if (!isArrayBuffer(e.data)) {
-    console.error(
-      `Unexpected callback from worker: ${JSON.stringify(e).substring(0, 100)}`,
+    logger.error(
+      "service.counter-image",
+      `Unexpected callback from worker`,
+      {
+        event: JSON.stringify(e).substring(0, 100),
+      },
     );
     return;
   }
@@ -73,7 +78,9 @@ function onWorkerMessage(e) {
   );
 
   if (pendingWorkerPromises[id] === undefined) {
-    console.error(`No pending worker promise found for ${id}`);
+    logger.error("service.counter-error", `No pending worker promise found`, {
+      promiseId: id,
+    });
     return;
   }
 
@@ -84,9 +91,10 @@ function onWorkerMessage(e) {
   delete pendingWorkerPromises[id];
 }
 
-if (config.DEV_MODE) {
-  console.log(`Loading ${WORKER_POOL_SIZE} image workers.`);
-}
+logger.info("service.counter-image", `Loading image workers.`, {
+  workerCount: WORKER_POOL_SIZE,
+});
+
 for (let i = 0; i < WORKER_POOL_SIZE; i++) {
   const w = new Worker(workerUrl, { type: "module" });
   w.onmessage = onWorkerMessage;

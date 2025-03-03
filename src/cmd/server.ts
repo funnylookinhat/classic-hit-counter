@@ -9,6 +9,7 @@ import {
   getVisitTotals,
 } from "@/services/site-visit/mod.ts";
 import { getPathToFile } from "@/util/path-root.ts";
+import { logger } from "../util/logger.ts";
 
 const config = getConfig();
 
@@ -16,16 +17,18 @@ const app = new Hono();
 
 app.use(compress());
 
-if (config.DEV_MODE) {
-  app.use(async (c, next) => {
-    console.log(
-      `Server.request: [${c.req.method}] ${c.req.url} - ${
-        JSON.stringify(c.req.header())
-      }`,
-    );
-    await next();
-  });
-}
+app.use(async (c, next) => {
+  logger.debug(
+    "cmd.server",
+    "received request",
+    {
+      method: c.req.method,
+      url: c.req.url,
+      headers: c.req.header(),
+    },
+  );
+  await next();
+});
 
 if (config.DEV_MODE) {
   app.use("/html/*", serveStatic({ root: getPathToFile("assets/") }));
