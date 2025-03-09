@@ -23,12 +23,12 @@ const workerPool: Worker[] = [];
 
 const pendingWorkerPromises: Record<number, HoistedPromise<Uint8Array>> = {};
 
-function configureWorkers(style: string): void {
+export function configureWorkers(style: string, minDigits: number): void {
   const configureCounterImageEvent: ConfigureCounterImageEvent = {
     data: {
       event: "configure",
       style,
-      minDigits: config.MINIMUM_IMAGE_DIGITS,
+      minDigits,
     },
   };
 
@@ -101,7 +101,7 @@ for (let i = 0; i < WORKER_POOL_SIZE; i++) {
   workerPool.push(w);
 }
 
-configureWorkers(config.COUNTER_STYLE);
+configureWorkers(config.COUNTER_STYLE, config.MINIMUM_IMAGE_DIGITS);
 
 let nextWorkerIndex = 0;
 

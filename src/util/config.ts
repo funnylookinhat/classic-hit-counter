@@ -17,7 +17,7 @@ export interface Config {
   IMAGE_WORKERS: number;
 }
 
-const COUNTER_STYLE_OPTIONS = [
+export const COUNTER_STYLE_OPTIONS = [
   "blue_digital_small",
   "blue_digital_large",
   "analog_small",

@@ -79,6 +79,8 @@ let fallbackImageArrayBuffer: ArrayBufferLike;
         { error },
       );
     }
+    // TODO - Send a message to the main thread to indicate that the worker is
+    // ready to generate images.
     return;
   }
 
