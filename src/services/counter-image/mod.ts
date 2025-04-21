@@ -61,7 +61,7 @@ function generateCounterImage(number: number): Promise<Uint8Array> {
   return pendingWorkerPromises[id].promise;
 }
 
-function onWorkerMessage(e) {
+function onWorkerMessage(e: MessageEvent<ArrayBuffer>) {
   if (!isArrayBuffer(e.data)) {
     logger.error(
       "service.counter-image",
